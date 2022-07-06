@@ -82,6 +82,10 @@ func WithSizeFormatter(f SizeFormatter) FileTreeBuilderOption {
 	}
 }
 
+func (b *FileTreeBuilder) Root() *Node {
+	return b.root
+}
+
 func (b *FileTreeBuilder) Build() {
 	b.root = listDir(b.path)
 }

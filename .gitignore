@@ -27,3 +27,4 @@ test/
 *.test
 *.pb.gz
 *.prof
+*.log
