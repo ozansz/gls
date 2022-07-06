@@ -106,5 +106,7 @@ func main() {
 			log.Fatalf("Error running GUI app: %v", err)
 		}
 	}
-	wg.Wait()
+	if *noGUI {
+		wg.Wait()
+	}
 }
