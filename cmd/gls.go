@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"sync"
 
 	"github.com/ozansz/gls/gui"
 	"github.com/ozansz/gls/internal"
@@ -16,10 +17,11 @@ const (
 )
 
 var (
-	path      = flag.String("path", "", "path to list")
-	formatter = flag.String("fmt", "bytes", "formatter to use: bytes, pow10 or none")
-	noGUI     = flag.Bool("nogui", false, "do not show GUI")
-	sort      = flag.Bool("sort", true, "sort nodes by size")
+	path          = flag.String("path", "", "path to list")
+	formatter     = flag.String("fmt", "bytes", "formatter to use: bytes, pow10 or none")
+	noGUI         = flag.Bool("nogui", false, "do not show GUI")
+	sort          = flag.Bool("sort", true, "sort nodes by size")
+	sizeThreshold = flag.String("thresh", "", "size filter threshold")
 
 	formatters = map[string]internal.SizeFormatter{
 		"bytes": internal.SizeFormatterBytes,
@@ -43,25 +45,46 @@ func main() {
 			panic(err)
 		}
 	}()
-	log.Infof("Starting gls with path: %s, log file: %s, formatter: %s, gui: %t", *path, logFile, *formatter, !*noGUI)
-	log.SetOutput(logF)
-	log.Infof("Started gls with path: %s, log file: %s, formatter: %s, gui: %t", *path, logFile, *formatter, !*noGUI)
 	formatterFunc, ok := formatters[*formatter]
 	if !ok {
 		log.Errorf("Unknown formatter: %s", *formatter)
 		flag.Usage()
 		return
 	}
+	var sizeThreshBytes int64 = 0
+	if *sizeThreshold != "" {
+		byteSize, mult, err := internal.ParseByteSize(*sizeThreshold)
+		if err != nil {
+			log.Errorf("Failed to parse size threshold: %s", *sizeThreshold)
+			return
+		}
+		if mult <= 0 {
+			log.Errorf("Size threshold cannot be less than or equal to zero: %s", *sizeThreshold)
+			return
+		}
+		sizeThreshBytes = int64(byteSize) * mult
+	}
+	log.Infof("Starting gls with path: %s, log file: %s, formatter: %s, gui: %t", *path, logFile, *formatter, !*noGUI)
+	if !*noGUI {
+		log.SetOutput(logF)
+		log.Infof("Started gls with path: %s, log file: %s, formatter: %s, gui: %t", *path, logFile, *formatter, !*noGUI)
+	}
 	var app *tview.Application
 	if !*noGUI {
 		app = gui.GetApp()
 	}
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		opts := []internal.FileTreeBuilderOption{
 			internal.WithSizeFormatter(formatterFunc),
 		}
 		if *sort {
 			opts = append(opts, internal.WithSortingBySize())
+		}
+		if sizeThreshBytes > 0 {
+			opts = append(opts, internal.WithSizeThreshold(sizeThreshBytes))
 		}
 		b := internal.NewFileTreeBuilder(*path, opts...)
 		b.Build()
@@ -83,4 +106,5 @@ func main() {
 			log.Fatalf("Error running GUI app: %v", err)
 		}
 	}
+	wg.Wait()
 }

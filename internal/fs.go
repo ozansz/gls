@@ -63,6 +63,7 @@ type FileTreeBuilder struct {
 	path          string
 	sort          bool
 	sizeFormatter SizeFormatter
+	sizeThreshold int64
 }
 
 func NewFileTreeBuilder(path string, opts ...FileTreeBuilderOption) *FileTreeBuilder {
@@ -71,6 +72,7 @@ func NewFileTreeBuilder(path string, opts ...FileTreeBuilderOption) *FileTreeBui
 		path:          path,
 		sort:          false,
 		sizeFormatter: NoFormat,
+		sizeThreshold: 0,
 	}
 	for _, opt := range opts {
 		opt(b)
@@ -90,12 +92,18 @@ func WithSortingBySize() FileTreeBuilderOption {
 	}
 }
 
+func WithSizeThreshold(thresh int64) FileTreeBuilderOption {
+	return func(b *FileTreeBuilder) {
+		b.sizeThreshold = thresh
+	}
+}
+
 func (b *FileTreeBuilder) Root() *Node {
 	return b.root
 }
 
 func (b *FileTreeBuilder) Build() {
-	b.root = listDir(b.path)
+	b.root = listDir(b.path, b.sizeThreshold)
 	if b.sort {
 		b.root.SortChildrenBySize()
 	}
@@ -117,7 +125,7 @@ func (b *FileTreeBuilder) RootInfo() error {
 	return nil
 }
 
-func listDir(path string) *Node {
+func listDir(path string, sizeThreshold int64) *Node {
 	root := &Node{
 		Name:     filepath.Base(path),
 		Mode:     os.ModeDir,
@@ -127,12 +135,12 @@ func listDir(path string) *Node {
 	myWc := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go walkDir(path, &wg, root, myWc)
+	go walkDir(path, &wg, root, myWc, sizeThreshold)
 	wg.Wait()
 	return root
 }
 
-func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}) {
+func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}, sizeThreshold int64) {
 	defer func() {
 		wg.Done()
 		wc <- struct{}{}
@@ -147,21 +155,25 @@ func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}) {
 			}
 			myWc := make(chan struct{})
 			wg.Add(1)
-			go walkDir(path, wg, this, myWc)
+			go walkDir(path, wg, this, myWc, sizeThreshold)
 			<-myWc
-			root.AddChild(this)
 			root.IncrementSize(this.Size)
+			if this.Size >= sizeThreshold {
+				root.AddChild(this)
+			}
 			return filepath.SkipDir
 		}
 		if f.Mode().IsRegular() {
 			size := f.Size()
-			root.AddChild(&Node{
-				Name:  f.Name(),
-				Mode:  f.Mode(),
-				Size:  size,
-				IsDir: false,
-			})
 			root.IncrementSize(size)
+			if size >= sizeThreshold {
+				root.AddChild(&Node{
+					Name:  f.Name(),
+					Mode:  f.Mode(),
+					Size:  size,
+					IsDir: false,
+				})
+			}
 		}
 		return nil
 	}
