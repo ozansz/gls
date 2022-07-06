@@ -19,6 +19,7 @@ var (
 	path      = flag.String("path", "", "path to list")
 	formatter = flag.String("fmt", "bytes", "formatter to use: bytes, pow10 or none")
 	noGUI     = flag.Bool("nogui", false, "do not show GUI")
+	sort      = flag.Bool("sort", true, "sort nodes by size")
 
 	formatters = map[string]internal.SizeFormatter{
 		"bytes": internal.SizeFormatterBytes,
@@ -58,6 +59,9 @@ func main() {
 	go func() {
 		opts := []internal.FileTreeBuilderOption{
 			internal.WithSizeFormatter(formatterFunc),
+		}
+		if *sort {
+			opts = append(opts, internal.WithSortingBySize())
 		}
 		b := internal.NewFileTreeBuilder(*path, opts...)
 		b.Build()

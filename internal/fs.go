@@ -61,6 +61,7 @@ func SizeFormatterPow10(size int64) string {
 type FileTreeBuilder struct {
 	root          *Node
 	path          string
+	sort          bool
 	sizeFormatter SizeFormatter
 }
 
@@ -68,6 +69,7 @@ func NewFileTreeBuilder(path string, opts ...FileTreeBuilderOption) *FileTreeBui
 	b := &FileTreeBuilder{
 		root:          nil,
 		path:          path,
+		sort:          false,
 		sizeFormatter: NoFormat,
 	}
 	for _, opt := range opts {
@@ -82,12 +84,21 @@ func WithSizeFormatter(f SizeFormatter) FileTreeBuilderOption {
 	}
 }
 
+func WithSortingBySize() FileTreeBuilderOption {
+	return func(b *FileTreeBuilder) {
+		b.sort = true
+	}
+}
+
 func (b *FileTreeBuilder) Root() *Node {
 	return b.root
 }
 
 func (b *FileTreeBuilder) Build() {
 	b.root = listDir(b.path)
+	if b.sort {
+		b.root.SortChildrenBySize()
+	}
 }
 
 func (b *FileTreeBuilder) Print() error {

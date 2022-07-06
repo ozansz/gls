@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -26,6 +27,15 @@ func (n *Node) AddChild(child *Node) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	n.Children = append(n.Children, child)
+}
+
+func (n *Node) SortChildrenBySize() {
+	for _, c := range n.Children {
+		c.SortChildrenBySize()
+	}
+	sort.Slice(n.Children, func(i, j int) bool {
+		return n.Children[i].Size > n.Children[j].Size
+	})
 }
 
 func (n *Node) Print() {
