@@ -22,6 +22,89 @@ type Node struct {
 	Parent           *Node
 }
 
+func (n *Node) clone() (*Node, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.Parent != nil {
+		return nil, fmt.Errorf("can only clone root node")
+	}
+	root := &Node{
+		Name:             n.Name,
+		Mode:             n.Mode,
+		Size:             n.Size,
+		IsDir:            n.IsDir,
+		LastModification: n.LastModification,
+		Parent:           nil,
+	}
+	for _, child := range n.Children {
+		root.AddChild(child.cloneWithParent(root))
+	}
+	return root, nil
+}
+
+func (n *Node) cloneWithParent(root *Node) *Node {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	clone := &Node{
+		Name:             n.Name,
+		Mode:             n.Mode,
+		Size:             n.Size,
+		IsDir:            n.IsDir,
+		LastModification: n.LastModification,
+		Parent:           root,
+	}
+	for _, child := range n.Children {
+		clone.AddChild(child.cloneWithParent(clone))
+	}
+	return clone
+}
+
+func (n *Node) ConstructSearchTreeWithSearchString(substring string) (*Node, error) {
+	tree, err := n.clone()
+	if err != nil {
+		return nil, err
+	}
+	weights := make(map[*Node]int)
+	weights[tree] = getSearchTreeWeight(tree, weights, substring)
+	removeZeroWeightsFromSearchTree(tree, weights)
+	return tree, nil
+}
+
+func removeZeroWeightsFromSearchTree(n *Node, weights map[*Node]int) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	newChildren := make([]*Node, 0)
+	for _, child := range n.Children {
+		if weights[child] > 0 {
+			newChildren = append(newChildren, child)
+		}
+	}
+	n.Children = newChildren
+	for _, child := range n.Children {
+		removeZeroWeightsFromSearchTree(child, weights)
+	}
+}
+
+func getSearchTreeWeight(n *Node, weights map[*Node]int, substring string) int {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.IsDir {
+		weight := 0
+		for _, child := range n.Children {
+			weight += getSearchTreeWeight(child, weights, substring)
+		}
+		weights[n] = weight
+		return weight
+	} else {
+		if strings.Contains(n.Name, substring) {
+			weights[n] = 1
+			return 1
+		}
+		weights[n] = 0
+		return 0
+	}
+}
+
 func (n *Node) GetFileType(parentPath string) (string, error) {
 	if n.IsDir {
 		return "directory", nil

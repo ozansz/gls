@@ -17,6 +17,8 @@ var (
 	currFileInfoTab   *tview.Table           = nil
 	currPath          string                 = ""
 	currSizeFormatter internal.SizeFormatter = nil
+	originalRootNode  *internal.Node         = nil
+	isFormInputActive bool                   = false
 )
 
 func GetApp(path string, f internal.SizeFormatter) *tview.Application {
@@ -24,30 +26,41 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 	currSizeFormatter = f
 	app := tview.NewApplication()
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC || event.Rune() == 'q' || event.Rune() == 'Q' {
+		if event.Key() == tcell.KeyCtrlC {
 			app.Stop()
 		}
-		if event.Rune() == 'c' || event.Rune() == 'C' {
-			currTreeView.GetRoot().CollapseAll()
-		}
-		if event.Rune() == 'e' || event.Rune() == 'E' {
-			currTreeView.GetRoot().ExpandAll()
-		}
-		if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyDEL {
-			if currTreeView == nil {
-				log.Warning("Tree view is nil")
-				return event
+		if !isFormInputActive {
+			if event.Rune() == 'q' || event.Rune() == 'Q' || event.Key() == tcell.KeyEscape {
+				app.Stop()
 			}
-			cNode := currTreeView.GetCurrentNode()
-			if cNode == currTreeView.GetRoot() {
-				showCannotRemoveRootWarning(app, cNode)
-				return event
+			if event.Rune() == 'c' || event.Rune() == 'C' {
+				currTreeView.GetRoot().CollapseAll()
 			}
-			if len(cNode.GetChildren()) > 0 {
-				showCannotRemoveFolderWarning(app, cNode)
-				return event
+			if event.Rune() == 'e' || event.Rune() == 'E' {
+				currTreeView.GetRoot().ExpandAll()
 			}
-			askRemoveFile(app, cNode)
+			if event.Rune() == 's' || event.Rune() == 'S' {
+				showSearchNameForm(app)
+			}
+			if event.Rune() == 'r' || event.Rune() == 'R' {
+				restoreOriginalRoot(app)
+			}
+			if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyDEL {
+				if currTreeView == nil {
+					log.Warning("Tree view is nil")
+					return event
+				}
+				cNode := currTreeView.GetCurrentNode()
+				if cNode == currTreeView.GetRoot() {
+					showCannotRemoveRootWarning(app, cNode)
+					return event
+				}
+				if len(cNode.GetChildren()) > 0 {
+					showCannotRemoveFolderWarning(app, cNode)
+					return event
+				}
+				askRemoveFile(app, cNode)
+			}
 		}
 		return event
 	})
@@ -56,6 +69,7 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 }
 
 func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
+	originalRootNode = node
 	root := constructTViewTreeFromNodeWithFormatter(node)
 	root.SetExpanded(true)
 	treeView := tview.NewTreeView().
@@ -100,7 +114,6 @@ func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
 
 	updateFileInfoTab(app, node)
 
-	// app.SetRoot(treeView, true).SetFocus(treeView).Draw()
 	app.SetRoot(grid, true).SetFocus(grid).Draw()
 }
 
@@ -121,11 +134,6 @@ func createFileInfoTable(app *tview.Application) *tview.Table {
 		SetTitle("Loading...").
 		SetTitleColor(FileInfoTitleColor).
 		SetBorder(true)
-	// table.SetDoneFunc(func(key tcell.Key) {
-	// 	if key == tcell.KeyTAB {
-	// 		app.SetFocus(currTreeView)
-	// 	}
-	// })
 	return table
 }
 
@@ -177,10 +185,6 @@ func updateFileInfoTab(app *tview.Application, node *internal.Node) {
 		SetCell(4, 1, permValueCell).
 		SetCell(5, 0, modifiedAttrCell).
 		SetCell(5, 1, modifiedValueCell)
-	// app.QueueUpdateDraw(func() {
-	// 	// currFileInfoTab.Select(1, 0)
-	// 	currFileInfoTab.ScrollToBeginning()
-	// })
 }
 
 func createLoadingPage(app *tview.Application) tview.Primitive {
@@ -237,7 +241,7 @@ func askRemoveFile(app *tview.Application, tnode *tview.TreeNode) {
 			if buttonLabel == "Yes" {
 				if err := tnode.GetReference().(*internal.Node).Remove(currPath); err != nil {
 					log.Errorf("Could not remove file %q: %v", node.Name, err)
-					showCannotRemoveFileError(app, node.Name, err.Error())
+					showMessage(app, fmt.Sprintf("Cannot remove file %q: %v", node.Name, err.Error()))
 					return
 				}
 				newRoot := constructTViewTreeFromNodeWithFormatter(currTreeView.GetRoot().GetReference().(*internal.Node))
@@ -250,9 +254,9 @@ func askRemoveFile(app *tview.Application, tnode *tview.TreeNode) {
 	app.SetRoot(modal, true).SetFocus(modal)
 }
 
-func showCannotRemoveFileError(app *tview.Application, name string, err string) {
+func showMessage(app *tview.Application, message string) {
 	modal := tview.NewModal().
-		SetText(fmt.Sprintf("Cannot remove file %q: %s", name, err)).
+		SetText(message).
 		AddButtons([]string{"OK"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "OK" {
@@ -260,4 +264,48 @@ func showCannotRemoveFileError(app *tview.Application, name string, err string) 
 			}
 		})
 	app.SetRoot(modal, true).SetFocus(modal)
+}
+
+func showSearchNameForm(app *tview.Application) {
+	form := tview.NewForm().
+		AddInputField("Name", "", 32, nil, nil).
+		AddButton("Cancel", func() {
+			isFormInputActive = false
+			app.SetRoot(currGrid, true).SetFocus(currGrid)
+		})
+	form.AddButton("Go", func() {
+		substring := form.GetFormItem(0).(*tview.InputField).GetText()
+		if substring == "" {
+			showMessage(app, "Please enter a substring")
+			return
+		}
+		log.Infof("Searching for substring: %s", substring)
+		newRootNode, err := originalRootNode.ConstructSearchTreeWithSearchString(substring)
+		log.Infof("New root node: %v", newRootNode)
+		if err != nil {
+			log.Errorf("Could not run search for %q: %v", substring, err)
+			showMessage(app, fmt.Sprintf("Could not run search for %q: %v", substring, err.Error()))
+			return
+		}
+		newRoot := constructTViewTreeFromNodeWithFormatter(newRootNode)
+		newRoot.SetExpanded(true)
+		currTreeView.SetRoot(newRoot).
+			SetCurrentNode(newRoot)
+		isFormInputActive = false
+		app.SetRoot(currGrid, true).SetFocus(currGrid)
+	})
+	form.SetBorder(true).
+		SetTitle("Search by name").
+		SetTitleAlign(tview.AlignCenter).
+		SetTitleColor(SearchFormTitleColor)
+	isFormInputActive = true
+	app.SetRoot(form, true).SetFocus(form)
+}
+
+func restoreOriginalRoot(app *tview.Application) {
+	root := constructTViewTreeFromNodeWithFormatter(originalRootNode)
+	root.SetExpanded(true)
+	currTreeView.SetRoot(root).
+		SetCurrentNode(root)
+	app.SetRoot(currGrid, true).SetFocus(currGrid)
 }
