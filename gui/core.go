@@ -42,15 +42,24 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 			if event.Rune() == 's' || event.Rune() == 'S' {
 				showSearchNameForm(app)
 			}
-			if event.Rune() == 'r' || event.Rune() == 'R' {
+			if event.Rune() == 'x' || event.Rune() == 'X' {
 				restoreOriginalRoot(app)
 			}
-			if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyDEL {
-				if currTreeView == nil {
-					log.Warning("Tree view is nil")
+			// Commands below here are about the current hovered file.
+			if currTreeView == nil {
+				log.Warning("Tree view is nil")
+				return event
+			}
+			cNode := currTreeView.GetCurrentNode()
+			if event.Rune() == 'o' || event.Rune() == 'O' {
+				relPath := cNode.GetReference().(*internal.Node).RelativePath(currPath)
+				if err := internal.OpenFile(relPath); err != nil {
+					log.Errorf("Could not open file %q: %v", relPath, err)
+					showMessage(app, fmt.Sprintf("Could not open file %q: %v", relPath, err))
 					return event
 				}
-				cNode := currTreeView.GetCurrentNode()
+			}
+			if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyDEL {
 				if cNode == currTreeView.GetRoot() {
 					showCannotRemoveRootWarning(app, cNode)
 					return event
@@ -88,7 +97,6 @@ func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
 	})
 	treeView.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyTAB {
-			// app.SetFocus(currFileInfoTab)
 			cNode := treeView.GetCurrentNode()
 			if cNode.IsExpanded() {
 				cNode.CollapseAll()
@@ -138,7 +146,6 @@ func createFileInfoTable(app *tview.Application) *tview.Table {
 }
 
 func updateFileInfoTab(app *tview.Application, node *internal.Node) {
-	// log.Infof("updateFileInfoTab is called with: %v", node)
 	if currFileInfoTab == nil {
 		log.Warning("updateFileInfoTab: currFileInfoTab is nil")
 		return

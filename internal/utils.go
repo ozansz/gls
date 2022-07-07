@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 	"strconv"
 )
 
@@ -43,4 +45,15 @@ func ParseByteSize(s string) (ByteSize, int64, error) {
 		return PB, i, nil
 	}
 	return 0, 0, fmt.Errorf("invalid suffix: %s", suffix)
+}
+
+func OpenFile(path string) error {
+	switch runtime.GOOS {
+	case "windows":
+		return exec.Command("cmd", "/C", "start", path).Run()
+	case "darwin":
+		return exec.Command("open", path).Run()
+	default:
+		return exec.Command("xdg-open", path).Run()
+	}
 }
