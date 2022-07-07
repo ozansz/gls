@@ -13,7 +13,9 @@ var (
 func BenchmarkFileTreeBuilder(b *testing.B) {
 	fmt.Printf("path: %s\n", *path)
 	for i := 0; i < b.N; i++ {
-		b := NewFileTreeBuilder(*path)
-		b.Build()
+		bl := NewFileTreeBuilder(*path)
+		if err := bl.Build(); err != nil {
+			b.Fatalf("error building file tree: %v", err)
+		}
 	}
 }

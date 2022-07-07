@@ -71,7 +71,7 @@ func main() {
 	}
 	var app *tview.Application
 	if !*noGUI {
-		app = gui.GetApp()
+		app = gui.GetApp(*path, formatterFunc)
 	}
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -87,17 +87,20 @@ func main() {
 			opts = append(opts, internal.WithSizeThreshold(sizeThreshBytes))
 		}
 		b := internal.NewFileTreeBuilder(*path, opts...)
-		b.Build()
+		if err := b.Build(); err != nil {
+			log.Fatalf("Failed to build file tree: %v", err)
+			return
+		}
 		log.Info("Finished building file tree")
 		if *noGUI {
 			if err := b.Print(); err != nil {
-				log.Errorf("Error while printing the file tree: %v\n", err)
+				log.Fatalf("Error while printing the file tree: %v\n", err)
 			}
 			return
 		}
 		if !*noGUI {
 			log.Info("Loading tree view on GUI")
-			gui.LoadTreeView(app, b.Root(), formatterFunc, *path)
+			gui.LoadTreeView(app, b.Root(), *path)
 			log.Info("Loaded the tree view on GUI")
 		}
 	}()

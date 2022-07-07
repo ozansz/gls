@@ -102,11 +102,16 @@ func (b *FileTreeBuilder) Root() *Node {
 	return b.root
 }
 
-func (b *FileTreeBuilder) Build() {
-	b.root = listDir(b.path, b.sizeThreshold)
+func (b *FileTreeBuilder) Build() error {
+	var err error
+	b.root, err = listDir(b.path, b.sizeThreshold)
+	if err != nil {
+		return err
+	}
 	if b.sort {
 		b.root.SortChildrenBySize()
 	}
+	return nil
 }
 
 func (b *FileTreeBuilder) Print() error {
@@ -125,19 +130,25 @@ func (b *FileTreeBuilder) RootInfo() error {
 	return nil
 }
 
-func listDir(path string, sizeThreshold int64) *Node {
+func listDir(path string, sizeThreshold int64) (*Node, error) {
+	finfo, err := os.Lstat(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lstat %s: %v", path, err)
+	}
 	root := &Node{
-		Name:     filepath.Base(path),
-		Mode:     os.ModeDir,
-		IsDir:    true,
-		Children: make([]*Node, 0),
+		Name:             filepath.Base(path),
+		Mode:             finfo.Mode(),
+		IsDir:            true,
+		Children:         make([]*Node, 0),
+		Parent:           nil,
+		LastModification: finfo.ModTime(),
 	}
 	myWc := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go walkDir(path, &wg, root, myWc, sizeThreshold)
 	wg.Wait()
-	return root
+	return root, nil
 }
 
 func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}, sizeThreshold int64) {
@@ -148,10 +159,12 @@ func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}, sizeT
 	visit := func(path string, f os.FileInfo, err error) error {
 		if f.IsDir() && path != dir {
 			this := &Node{
-				Name:     f.Name(),
-				Mode:     f.Mode(),
-				IsDir:    true,
-				Children: []*Node{},
+				Name:             f.Name(),
+				Mode:             f.Mode(),
+				IsDir:            true,
+				Children:         []*Node{},
+				Parent:           root,
+				LastModification: f.ModTime(),
 			}
 			myWc := make(chan struct{})
 			wg.Add(1)
@@ -168,10 +181,12 @@ func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}, sizeT
 			root.IncrementSize(size)
 			if size >= sizeThreshold {
 				root.AddChild(&Node{
-					Name:  f.Name(),
-					Mode:  f.Mode(),
-					Size:  size,
-					IsDir: false,
+					Name:             f.Name(),
+					Mode:             f.Mode(),
+					Size:             size,
+					IsDir:            false,
+					Parent:           root,
+					LastModification: f.ModTime(),
 				})
 			}
 		}

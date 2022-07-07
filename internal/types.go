@@ -6,15 +6,39 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Node struct {
-	Name     string
-	Mode     os.FileMode
-	Size     int64
-	IsDir    bool
-	Children []*Node
-	mu       sync.Mutex
+	mu               sync.Mutex
+	Name             string
+	Mode             os.FileMode
+	Size             int64
+	IsDir            bool
+	LastModification time.Time
+	Children         []*Node
+	Parent           *Node
+}
+
+func (n *Node) Remove(parentPath string) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.IsDir {
+		return fmt.Errorf("cannot remove directory %s", n.Name)
+	}
+	n.Parent.RemoveChild(n)
+	return os.Remove(n.RelativePath(parentPath))
+}
+
+func (n *Node) RemoveChild(c *Node) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	for i, child := range n.Children {
+		if child == c {
+			n.Children = append(n.Children[:i], n.Children[i+1:]...)
+			return
+		}
+	}
 }
 
 func (n *Node) IncrementSize(size int64) {
@@ -65,4 +89,14 @@ func (n *Node) InfoWithSizeFormatter(f SizeFormatter) string {
 
 func (n *Node) infoWithLevel(level int, f SizeFormatter) string {
 	return fmt.Sprintf("%s%s [%s] [%s]", strings.Repeat("  ", level), n.Name, n.Mode.String(), f(n.Size))
+}
+
+func (n *Node) RelativePath(parent string) string {
+	if n.Parent == nil {
+		if parent == "" {
+			return n.Name
+		}
+		return parent
+	}
+	return n.Parent.RelativePath(parent) + "/" + n.Name
 }
