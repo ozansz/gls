@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ozansz/gls/internal/analyzer"
 )
 
 type Node struct {
@@ -18,6 +20,17 @@ type Node struct {
 	LastModification time.Time
 	Children         []*Node
 	Parent           *Node
+}
+
+func (n *Node) GetFileType(parentPath string) (string, error) {
+	if n.IsDir {
+		return "directory", nil
+	}
+	typ, err := analyzer.AnalyzeFileType(n.RelativePath(parentPath))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s (%s)", typ.MIME.Value, typ.Extension), nil
 }
 
 func (n *Node) Remove(parentPath string) error {

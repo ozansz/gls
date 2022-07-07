@@ -150,12 +150,17 @@ func updateFileInfoTab(app *tview.Application, node *internal.Node) {
 	typeAttrCell := tview.NewTableCell("Type").
 		SetMaxWidth(FileInfoTabAttrWidth).
 		SetTextColor(FileInfoAttrColor)
-	typeValueCell := tview.NewTableCell(node.Mode.Type().String()).
+	fileType, err := node.GetFileType(currPath)
+	if err != nil {
+		log.Errorf("Failed to get type for file %q: %v", node.Name, err)
+		fileType = fmt.Sprintf("<error: %v>", err)
+	}
+	typeValueCell := tview.NewTableCell(fileType).
 		SetTextColor(FileInfoValueColor)
 	permAttrCell := tview.NewTableCell("Permissions").
 		SetMaxWidth(FileInfoTabAttrWidth).
 		SetTextColor(FileInfoAttrColor)
-	permValueCell := tview.NewTableCell(node.Mode.Perm().String()).
+	permValueCell := tview.NewTableCell(node.Mode.String()).
 		SetTextColor(FileInfoValueColor)
 	modifiedAttrCell := tview.NewTableCell("Modified").
 		SetMaxWidth(FileInfoTabAttrWidth).
