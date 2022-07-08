@@ -57,3 +57,7 @@ func OpenFile(path string) error {
 		return exec.Command("xdg-open", path).Run()
 	}
 }
+
+func OpenFileWithProgram(path, program string) error {
+	return exec.Command(program, path).Run()
+}

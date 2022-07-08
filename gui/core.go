@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -11,10 +12,16 @@ import (
 	"github.com/ozansz/gls/log"
 )
 
+type Shortcut struct {
+	Key     string
+	Command string
+}
+
 var (
 	currGrid          *tview.Grid            = nil
 	currTreeView      *tview.TreeView        = nil
 	currFileInfoTab   *tview.Table           = nil
+	currLastLogView   *tview.TextView        = nil
 	currPath          string                 = ""
 	currSizeFormatter internal.SizeFormatter = nil
 	originalRootNode  *internal.Node         = nil
@@ -55,9 +62,13 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 				relPath := cNode.GetReference().(*internal.Node).RelativePath(currPath)
 				if err := internal.OpenFile(relPath); err != nil {
 					log.Errorf("Could not open file %q: %v", relPath, err)
-					showMessage(app, fmt.Sprintf("Could not open file %q: %v", relPath, err))
+					showMessage(app, fmt.Sprintf("Could not open file %q: %v", relPath, err), nil)
 					return event
 				}
+			}
+			if event.Rune() == 'p' || event.Rune() == 'P' {
+				relPath := cNode.GetReference().(*internal.Node).RelativePath(currPath)
+				askOpenFileWithProgram(app, relPath)
 			}
 			if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyDEL {
 				if cNode == currTreeView.GetRoot() {
@@ -113,16 +124,68 @@ func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
 
 	fileInfoTab := createFileInfoTable(app)
 
-	grid.AddItem(treeView, 0, 0, 10, 5, 0, 0, true)
-	grid.AddItem(fileInfoTab, 10, 0, 2, 5, 0, 0, true)
+	lastLogTextView := tview.NewTextView().
+		SetText("OK.").
+		SetTextColor(tcell.ColorWhite).
+		SetWrap(true)
+
+	helpSideBar := createHelpSideBar(app)
+
+	grid.AddItem(treeView, 0, 0, 19, 4, 0, 0, true)
+	grid.AddItem(fileInfoTab, 19, 0, 4, 4, 0, 0, false)
+	grid.AddItem(lastLogTextView, 23, 0, 2, 5, 0, 0, false)
+	grid.AddItem(helpSideBar, 0, 4, 23, 1, 0, 0, false)
 
 	currTreeView = treeView
 	currFileInfoTab = fileInfoTab
+	currLastLogView = lastLogTextView
 	currGrid = grid
 
 	updateFileInfoTab(app, node)
 
 	app.SetRoot(grid, true).SetFocus(grid).Draw()
+}
+
+func createHelpSideBar(app *tview.Application) *tview.Table {
+	table := tview.NewTable()
+	keyHeader := tview.NewTableCell("Key").
+		SetTextColor(FileInfoAttrColor).
+		SetSelectable(false)
+	commandHeader := tview.NewTableCell("Command").
+		SetTextColor(FileInfoValueColor).
+		SetSelectable(false)
+	table.SetCell(0, 0, keyHeader).
+		SetCell(0, 1, commandHeader).
+		SetFixed(1, 0)
+	table.SetSelectable(false, false).
+		SetSeparator('|').
+		SetBordersColor(BorderColor).
+		SetTitle("Shortcuts").
+		SetTitleColor(FileInfoTitleColor).
+		SetBorder(false)
+	table.SetBorder(true).
+		SetBorderColor(BorderColor).
+		SetTitle("Shortcuts")
+	for i, s := range keyboardShortcuts {
+		table.SetCell(i+1, 0, tview.NewTableCell(s.Key).SetTextColor(FileInfoAttrColor)).
+			SetCell(i+1, 1, tview.NewTableCell(s.Command).SetTextColor(FileInfoValueColor))
+	}
+	return table
+}
+
+func setLastLog(text string) {
+	if currLastLogView == nil {
+		return
+	}
+	currLastLogView.SetText(fmt.Sprintf("%s %s", time.Now().Format("2006-01-02 15:04:05"), text))
+}
+
+func setError(text string) {
+	setLastLog(fmt.Sprintf("[red]ERROR[white] %s", text))
+}
+
+func setInfo(text string) {
+	setLastLog(fmt.Sprintf("INFO %s", text))
 }
 
 func createFileInfoTable(app *tview.Application) *tview.Table {
@@ -248,7 +311,7 @@ func askRemoveFile(app *tview.Application, tnode *tview.TreeNode) {
 			if buttonLabel == "Yes" {
 				if err := tnode.GetReference().(*internal.Node).Remove(currPath); err != nil {
 					log.Errorf("Could not remove file %q: %v", node.Name, err)
-					showMessage(app, fmt.Sprintf("Cannot remove file %q: %v", node.Name, err.Error()))
+					showMessage(app, fmt.Sprintf("Cannot remove file %q: %v", node.Name, err.Error()), nil)
 					return
 				}
 				newRoot := constructTViewTreeFromNodeWithFormatter(currTreeView.GetRoot().GetReference().(*internal.Node))
@@ -261,7 +324,7 @@ func askRemoveFile(app *tview.Application, tnode *tview.TreeNode) {
 	app.SetRoot(modal, true).SetFocus(modal)
 }
 
-func showMessage(app *tview.Application, message string) {
+func showMessage(app *tview.Application, message string, callback func()) {
 	modal := tview.NewModal().
 		SetText(message).
 		AddButtons([]string{"OK"}).
@@ -271,6 +334,9 @@ func showMessage(app *tview.Application, message string) {
 			}
 		})
 	app.SetRoot(modal, true).SetFocus(modal)
+	if callback != nil {
+		callback()
+	}
 }
 
 func showSearchNameForm(app *tview.Application) {
@@ -283,7 +349,7 @@ func showSearchNameForm(app *tview.Application) {
 	form.AddButton("Go", func() {
 		substring := form.GetFormItem(0).(*tview.InputField).GetText()
 		if substring == "" {
-			showMessage(app, "Please enter a substring")
+			showMessage(app, "Please enter a substring", nil)
 			return
 		}
 		log.Infof("Searching for substring: %s", substring)
@@ -291,7 +357,7 @@ func showSearchNameForm(app *tview.Application) {
 		log.Infof("New root node: %v", newRootNode)
 		if err != nil {
 			log.Errorf("Could not run search for %q: %v", substring, err)
-			showMessage(app, fmt.Sprintf("Could not run search for %q: %v", substring, err.Error()))
+			showMessage(app, fmt.Sprintf("Could not run search for %q: %v", substring, err.Error()), nil)
 			return
 		}
 		newRoot := constructTViewTreeFromNodeWithFormatter(newRootNode)
@@ -315,4 +381,36 @@ func restoreOriginalRoot(app *tview.Application) {
 	currTreeView.SetRoot(root).
 		SetCurrentNode(root)
 	app.SetRoot(currGrid, true).SetFocus(currGrid)
+}
+
+func askOpenFileWithProgram(app *tview.Application, relPath string) {
+	form := tview.NewForm().
+		AddInputField("Executable", "", 32, nil, nil)
+	form.AddButton("Open", func() {
+		defer func() {
+			isFormInputActive = false
+		}()
+		program := form.GetFormItem(0).(*tview.InputField).GetText()
+		if program == "" {
+			showMessage(app, "Please enter an executable name", nil)
+			return
+		}
+		log.Infof("Opening %q with %q", relPath, program)
+		if err := internal.OpenFileWithProgram(relPath, program); err != nil {
+			log.Errorf("Could not open file %q with %q: %v", relPath, err)
+			setError(fmt.Sprintf("Could not open file %q with %q: %v", relPath, program, err))
+			app.SetRoot(currGrid, true).SetFocus(currGrid)
+		}
+	})
+	form.AddButton("Cancel", func() {
+		isFormInputActive = false
+		app.SetRoot(currGrid, true).SetFocus(currGrid)
+	})
+	form.SetBorder(true).
+		SetTitle("Open file with program").
+		SetTitleAlign(tview.AlignCenter).
+		SetTitleColor(SearchFormTitleColor)
+	isFormInputActive = true
+	app.SetRoot(form, true).SetFocus(form)
+
 }
