@@ -18,6 +18,8 @@ const (
 	FileInfoAttrColor    = tcell.ColorPowderBlue
 	FileInfoValueColor   = tcell.ColorLightSkyBlue
 	SearchFormTitleColor = tcell.ColorLightSkyBlue
+	UnmarkedFileColor    = tcell.ColorWhite
+	MarkedFileColor      = tcell.ColorRed
 
 	FileInfoTabAttrWidth = 20
 )
@@ -71,6 +73,14 @@ var (
 		{
 			Key:     "DEL",
 			Command: "remove",
+		},
+		{
+			Key:     "m",
+			Command: "mark",
+		},
+		{
+			Key:     "u",
+			Command: "unmark all",
 		},
 	}
 )

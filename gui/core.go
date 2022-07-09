@@ -13,14 +13,15 @@ import (
 )
 
 var (
-	currGrid          *tview.Grid            = nil
-	currTreeView      *tview.TreeView        = nil
-	currFileInfoTab   *tview.Table           = nil
-	currLastLogView   *tview.TextView        = nil
-	currPath          string                 = ""
-	currSizeFormatter internal.SizeFormatter = nil
-	originalRootNode  *internal.Node         = nil
-	isFormInputActive bool                   = false
+	currGrid          *tview.Grid                  = nil
+	currTreeView      *tview.TreeView              = nil
+	currFileInfoTab   *tview.Table                 = nil
+	currLastLogView   *tview.TextView              = nil
+	currPath          string                       = ""
+	currSizeFormatter internal.SizeFormatter       = nil
+	originalRootNode  *internal.Node               = nil
+	isFormInputActive bool                         = false
+	markedFiles       map[*tview.TreeNode]struct{} = make(map[*tview.TreeNode]struct{})
 )
 
 func GetApp(path string, f internal.SizeFormatter) *tview.Application {
@@ -49,6 +50,12 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 			}
 			if event.Rune() == 'x' || event.Rune() == 'X' {
 				restoreOriginalRoot(app)
+			}
+			if event.Rune() == 'm' || event.Rune() == 'M' {
+				markUnmarkFile(app)
+			}
+			if event.Rune() == 'u' || event.Rune() == 'U' {
+				unmarkAll(app)
 			}
 			// Commands below here are about the current hovered file.
 			if currTreeView == nil {
@@ -269,7 +276,8 @@ func constructNativeTree(node *internal.Node) *tview.TreeNode {
 func constructTViewTreeFromNodeWithFormatter(node *internal.Node, f internal.SizeFormatter) *tview.TreeNode {
 	treeNode := tview.NewTreeNode(node.InfoWithSizeFormatter(f)).
 		SetReference(node).
-		SetSelectable(true)
+		SetSelectable(true).
+		SetColor(UnmarkedFileColor)
 	if node.IsDir {
 		treeNode.SetColor(DirectoryColor).
 			SetExpanded(false)
@@ -442,4 +450,26 @@ func askOpenFileWithProgram(app *tview.Application, relPath string) {
 	isFormInputActive = true
 	app.SetRoot(form, true).SetFocus(form)
 
+}
+
+func markUnmarkFile(app *tview.Application) {
+	cNode := currTreeView.GetCurrentNode()
+	if _, ok := markedFiles[cNode]; ok { // unmark if already marked
+		cNode.SetColor(UnmarkedFileColor)
+		delete(markedFiles, cNode)
+		log.Debugf("Removed node with name %q from marked files", cNode.GetText())
+	} else {
+		cNode.SetColor(MarkedFileColor)
+		markedFiles[cNode] = struct{}{}
+		log.Debugf("Added node with name %q to marked files", cNode.GetText())
+	}
+}
+
+func unmarkAll(app *tview.Application) {
+	for n := range markedFiles {
+		n.SetColor(UnmarkedFileColor)
+		delete(markedFiles, n)
+		log.Debugf("Removed node with name %q from marked files (unmarkAll)", n.GetText())
+	}
+	log.Debugf("markedFiles after unmarkAll: %#v", markedFiles)
 }
