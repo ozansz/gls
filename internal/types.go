@@ -22,6 +22,22 @@ type Node struct {
 	Parent           *Node
 }
 
+func (n *Node) FileCount() int {
+	if n == nil {
+		return 0
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.IsDir {
+		count := 0
+		for _, c := range n.Children {
+			count += c.FileCount()
+		}
+		return count
+	}
+	return 1
+}
+
 func (n *Node) clone() (*Node, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()

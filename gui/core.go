@@ -84,8 +84,14 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 }
 
 func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
+	lastLogTextView := tview.NewTextView().
+		SetText("OK.").
+		SetTextColor(tcell.ColorWhite).
+		SetWrap(true)
+	currLastLogView = lastLogTextView
+
 	originalRootNode = node
-	root := constructTViewTreeFromNodeWithFormatter(node)
+	root := constructNativeTree(node)
 	root.SetExpanded(true)
 	treeView := tview.NewTreeView().
 		SetRoot(root).
@@ -119,11 +125,6 @@ func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
 
 	fileInfoTab := createFileInfoTable(app)
 
-	lastLogTextView := tview.NewTextView().
-		SetText("OK.").
-		SetTextColor(tcell.ColorWhite).
-		SetWrap(true)
-
 	helpSideBar := createHelpSideBar(app)
 
 	grid.AddItem(treeView, 0, 0, 19, 4, 0, 0, true)
@@ -133,7 +134,6 @@ func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
 
 	currTreeView = treeView
 	currFileInfoTab = fileInfoTab
-	currLastLogView = lastLogTextView
 	currGrid = grid
 
 	updateFileInfoTab(app, node)
@@ -174,11 +174,11 @@ func setLastLog(text string) {
 }
 
 func setError(text string) {
-	setLastLog(fmt.Sprintf("[red]ERROR[white] %s", text))
+	setLastLog(fmt.Sprintf("[ERROR] %s", text))
 }
 
 func setInfo(text string) {
-	setLastLog(fmt.Sprintf("INFO %s", text))
+	setLastLog(fmt.Sprintf("[INFO] %s", text))
 }
 
 func createFileInfoTable(app *tview.Application) *tview.Table {
@@ -257,8 +257,14 @@ func createLoadingPage(app *tview.Application) tview.Primitive {
 	return loadingPage
 }
 
-func constructTViewTreeFromNodeWithFormatter(node *internal.Node) *tview.TreeNode {
-	treeNode := tview.NewTreeNode(node.InfoWithSizeFormatter(currSizeFormatter)).
+func constructNativeTree(node *internal.Node) *tview.TreeNode {
+	t := constructTViewTreeFromNodeWithFormatter(node, currSizeFormatter)
+	setInfo(fmt.Sprintf("Constructed tree with %d files", node.FileCount()))
+	return t
+}
+
+func constructTViewTreeFromNodeWithFormatter(node *internal.Node, f internal.SizeFormatter) *tview.TreeNode {
+	treeNode := tview.NewTreeNode(node.InfoWithSizeFormatter(f)).
 		SetReference(node).
 		SetSelectable(true)
 	if node.IsDir {
@@ -266,7 +272,7 @@ func constructTViewTreeFromNodeWithFormatter(node *internal.Node) *tview.TreeNod
 			SetExpanded(false)
 	}
 	for _, child := range node.Children {
-		treeNode.AddChild(constructTViewTreeFromNodeWithFormatter(child))
+		treeNode.AddChild(constructTViewTreeFromNodeWithFormatter(child, f))
 	}
 	return treeNode
 }
@@ -307,7 +313,7 @@ func askRemoveFile(app *tview.Application, tnode *tview.TreeNode) {
 					showMessage(app, fmt.Sprintf("Cannot remove file %q: %v", node.Name, err.Error()), nil)
 					return
 				}
-				newRoot := constructTViewTreeFromNodeWithFormatter(currTreeView.GetRoot().GetReference().(*internal.Node))
+				newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*internal.Node))
 				newRoot.SetExpanded(true)
 				currTreeView.SetRoot(newRoot).
 					SetCurrentNode(newRoot)
@@ -357,7 +363,7 @@ func showSearchNameForm(app *tview.Application) {
 			showMessage(app, fmt.Sprintf("Could not run search for %q: %v", substring, err.Error()), nil)
 			return
 		}
-		newRoot := constructTViewTreeFromNodeWithFormatter(newRootNode)
+		newRoot := constructNativeTree(newRootNode)
 		newRoot.SetExpanded(true)
 		currTreeView.SetRoot(newRoot).
 			SetCurrentNode(newRoot)
@@ -373,7 +379,7 @@ func showSearchNameForm(app *tview.Application) {
 }
 
 func restoreOriginalRoot(app *tview.Application) {
-	root := constructTViewTreeFromNodeWithFormatter(originalRootNode)
+	root := constructNativeTree(originalRootNode)
 	root.SetExpanded(true)
 	currTreeView.SetRoot(root).
 		SetCurrentNode(root)
