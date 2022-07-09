@@ -59,13 +59,13 @@ func (n *Node) cloneWithParent(root *Node) *Node {
 	return clone
 }
 
-func (n *Node) ConstructSearchTreeWithSearchString(substring string) (*Node, error) {
+func (n *Node) NewFilteredTree(nameContains string, caseInsensitive bool) (*Node, error) {
 	tree, err := n.clone()
 	if err != nil {
 		return nil, err
 	}
 	weights := make(map[*Node]int)
-	weights[tree] = getSearchTreeWeight(tree, weights, substring)
+	weights[tree] = getSearchTreeWeight(tree, weights, nameContains, caseInsensitive)
 	removeZeroWeightsFromSearchTree(tree, weights)
 	return tree, nil
 }
@@ -85,18 +85,24 @@ func removeZeroWeightsFromSearchTree(n *Node, weights map[*Node]int) {
 	}
 }
 
-func getSearchTreeWeight(n *Node, weights map[*Node]int, substring string) int {
+func getSearchTreeWeight(n *Node, weights map[*Node]int, substring string, caseInsensitive bool) int {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if n.IsDir {
 		weight := 0
 		for _, child := range n.Children {
-			weight += getSearchTreeWeight(child, weights, substring)
+			weight += getSearchTreeWeight(child, weights, substring, caseInsensitive)
 		}
 		weights[n] = weight
 		return weight
 	} else {
-		if strings.Contains(n.Name, substring) {
+		name := n.Name
+		sub := substring
+		if caseInsensitive {
+			name = strings.ToLower(name)
+			sub = strings.ToLower(sub)
+		}
+		if strings.Contains(name, sub) {
 			weights[n] = 1
 			return 1
 		}

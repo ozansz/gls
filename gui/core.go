@@ -333,12 +333,16 @@ func showMessage(app *tview.Application, message string, callback func()) {
 }
 
 func showSearchNameForm(app *tview.Application) {
+	var searchCaseInsensitive bool
 	form := tview.NewForm().
 		AddInputField("Name", "", 32, nil, nil).
 		AddButton("Cancel", func() {
 			isFormInputActive = false
 			app.SetRoot(currGrid, true).SetFocus(currGrid)
 		})
+	form.AddCheckbox("Case insensitive", false, func(checked bool) {
+		searchCaseInsensitive = checked
+	})
 	form.AddButton("Go", func() {
 		substring := form.GetFormItem(0).(*tview.InputField).GetText()
 		if substring == "" {
@@ -346,7 +350,7 @@ func showSearchNameForm(app *tview.Application) {
 			return
 		}
 		log.Infof("Searching for substring: %s", substring)
-		newRootNode, err := originalRootNode.ConstructSearchTreeWithSearchString(substring)
+		newRootNode, err := originalRootNode.NewFilteredTree(substring, searchCaseInsensitive)
 		log.Infof("New root node: %v", newRootNode)
 		if err != nil {
 			log.Errorf("Could not run search for %q: %v", substring, err)
