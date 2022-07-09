@@ -49,6 +49,10 @@ var (
 			Command: "search",
 		},
 		{
+			Key:     "r",
+			Command: "regex search",
+		},
+		{
 			Key:     "x",
 			Command: "restore",
 		},

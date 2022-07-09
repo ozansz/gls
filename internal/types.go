@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -75,13 +76,75 @@ func (n *Node) cloneWithParent(root *Node) *Node {
 	return clone
 }
 
-func (n *Node) NewFilteredTree(nameContains string, caseInsensitive bool) (*Node, error) {
+type TreeFilterOptions struct {
+	nameContains    string
+	re              *regexp.Regexp
+	caseInsensitive bool
+	invertSelection bool
+}
+
+func NewTreeFilterOpts(nameContains, reMatches string, caseInsensitive, invert bool) (*TreeFilterOptions, error) {
+	o := &TreeFilterOptions{
+		nameContains:    nameContains,
+		caseInsensitive: caseInsensitive,
+		invertSelection: invert,
+	}
+	if reMatches == "" {
+		o.re = nil
+	} else {
+		if caseInsensitive {
+			reMatches = "(?i)" + reMatches
+		}
+		var err error
+		o.re, err = regexp.Compile(reMatches)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return o, nil
+}
+
+func (o *TreeFilterOptions) IsNoOp() bool {
+	if o.nameContains == "" && o.re == nil {
+		return true
+	}
+	return false
+}
+
+func (o *TreeFilterOptions) CheckNameContains(original string) bool {
+	if o.nameContains == "" {
+		return true // pass the test
+	}
+	name := original
+	sub := o.nameContains
+	if o.caseInsensitive {
+		name = strings.ToLower(name)
+		sub = strings.ToLower(sub)
+	}
+	return strings.Contains(name, sub) != o.invertSelection // return (ok XOR invert)
+}
+
+func (o *TreeFilterOptions) CheckRegexMatches(original string) bool {
+	if o.re == nil {
+		return true // pass the test
+	}
+	name := original
+	if o.caseInsensitive {
+		name = strings.ToLower(name)
+	}
+	return o.re.MatchString(name) != o.invertSelection // return (ok XOR invert)
+}
+
+func (n *Node) NewFilteredTree(opts *TreeFilterOptions) (*Node, error) {
 	tree, err := n.clone()
 	if err != nil {
 		return nil, err
 	}
+	if opts.IsNoOp() {
+		return tree, nil
+	}
 	weights := make(map[*Node]int)
-	weights[tree] = getSearchTreeWeight(tree, weights, nameContains, caseInsensitive)
+	weights[tree] = getSearchTreeWeight(tree, weights, opts)
 	removeZeroWeightsFromSearchTree(tree, weights)
 	return tree, nil
 }
@@ -101,24 +164,18 @@ func removeZeroWeightsFromSearchTree(n *Node, weights map[*Node]int) {
 	}
 }
 
-func getSearchTreeWeight(n *Node, weights map[*Node]int, substring string, caseInsensitive bool) int {
+func getSearchTreeWeight(n *Node, weights map[*Node]int, opts *TreeFilterOptions) int {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if n.IsDir {
 		weight := 0
 		for _, child := range n.Children {
-			weight += getSearchTreeWeight(child, weights, substring, caseInsensitive)
+			weight += getSearchTreeWeight(child, weights, opts)
 		}
 		weights[n] = weight
 		return weight
 	} else {
-		name := n.Name
-		sub := substring
-		if caseInsensitive {
-			name = strings.ToLower(name)
-			sub = strings.ToLower(sub)
-		}
-		if strings.Contains(name, sub) {
+		if opts.CheckNameContains(n.Name) && opts.CheckRegexMatches(n.Name) {
 			weights[n] = 1
 			return 1
 		}

@@ -42,7 +42,10 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 				currTreeView.GetRoot().ExpandAll()
 			}
 			if event.Rune() == 's' || event.Rune() == 'S' {
-				showSearchNameForm(app)
+				showSearchNameForm(app, false)
+			}
+			if event.Rune() == 'r' || event.Rune() == 'R' {
+				showSearchNameForm(app, true)
 			}
 			if event.Rune() == 'x' || event.Rune() == 'X' {
 				restoreOriginalRoot(app)
@@ -338,10 +341,15 @@ func showMessage(app *tview.Application, message string, callback func()) {
 	}
 }
 
-func showSearchNameForm(app *tview.Application) {
+func showSearchNameForm(app *tview.Application, isRegex bool) {
 	var searchCaseInsensitive bool
+	var searchInverse bool
+	inputLabel := "Name"
+	if isRegex {
+		inputLabel = "Regular expression"
+	}
 	form := tview.NewForm().
-		AddInputField("Name", "", 32, nil, nil).
+		AddInputField(inputLabel, "", 32, nil, nil).
 		AddButton("Cancel", func() {
 			isFormInputActive = false
 			app.SetRoot(currGrid, true).SetFocus(currGrid)
@@ -349,25 +357,43 @@ func showSearchNameForm(app *tview.Application) {
 	form.AddCheckbox("Case insensitive", false, func(checked bool) {
 		searchCaseInsensitive = checked
 	})
+	form.AddCheckbox("Inverse (exclude the names)", false, func(checked bool) {
+		searchInverse = checked
+	})
 	form.AddButton("Go", func() {
-		substring := form.GetFormItem(0).(*tview.InputField).GetText()
-		if substring == "" {
-			showMessage(app, "Please enter a substring", nil)
+		defer func() {
+			isFormInputActive = false
+		}()
+		query := form.GetFormItem(0).(*tview.InputField).GetText()
+		if query == "" {
+			showMessage(app, "Please enter a non-empty query", nil)
 			return
 		}
-		log.Infof("Searching for substring: %s", substring)
-		newRootNode, err := originalRootNode.NewFilteredTree(substring, searchCaseInsensitive)
+		log.Infof("Searching for query: %s", query)
+		var err error
+		var opts *internal.TreeFilterOptions
+		if isRegex {
+			opts, err = internal.NewTreeFilterOpts("", query, searchCaseInsensitive, searchInverse)
+		} else {
+			opts, err = internal.NewTreeFilterOpts(query, "", searchCaseInsensitive, searchInverse)
+		}
+		if err != nil {
+			errStr := fmt.Sprintf("Could not create filter options: %v", err)
+			showMessage(app, errStr, nil)
+			setError(errStr)
+			return
+		}
+		newRootNode, err := originalRootNode.NewFilteredTree(opts)
 		log.Infof("New root node: %v", newRootNode)
 		if err != nil {
-			log.Errorf("Could not run search for %q: %v", substring, err)
-			showMessage(app, fmt.Sprintf("Could not run search for %q: %v", substring, err.Error()), nil)
+			log.Errorf("Could not run search for %q: %v", query, err)
+			showMessage(app, fmt.Sprintf("Could not run search for %q: %v", query, err.Error()), nil)
 			return
 		}
 		newRoot := constructNativeTree(newRootNode)
 		newRoot.SetExpanded(true)
 		currTreeView.SetRoot(newRoot).
 			SetCurrentNode(newRoot)
-		isFormInputActive = false
 		app.SetRoot(currGrid, true).SetFocus(currGrid)
 	})
 	form.SetBorder(true).
