@@ -179,7 +179,10 @@ func walkDir(dir string, wg *sync.WaitGroup,
 		if checkIgnore(f) {
 			// Ignore this folder/file
 			log.Debugf("Ignoring %s/%s", dir, f.Name())
-			return filepath.SkipDir
+			if f.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		if f.IsDir() && path != dir {
 			this := &Node{

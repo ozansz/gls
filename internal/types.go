@@ -263,7 +263,7 @@ func (n *Node) InfoWithSizeFormatter(f SizeFormatter) string {
 }
 
 func (n *Node) infoWithLevel(level int, f SizeFormatter) string {
-	return fmt.Sprintf("%s%s [%s] [%s]", strings.Repeat("  ", level), n.Name, n.Mode.String(), f(n.Size))
+	return fmt.Sprintf("%s%s [%s]", strings.Repeat("  ", level), n.Name, f(n.Size))
 }
 
 func (n *Node) RelativePath(parent string) string {
