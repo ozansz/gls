@@ -11,11 +11,19 @@ import (
 	"strings"
 )
 
+const (
+	defaultIgnoreFile        = ".glsignore"
+	regexDirectoryRulePrefix = "re:dir:"
+	regexFileRulePrefix      = "re:"
+)
+
 var (
 	replacements = []struct {
 		from string
 		to   string
 	}{
+		// NOTE: The replacement ordering is VERY IMPORTANT!
+		{from: `\`, to: `\\`},
 		{from: `.`, to: `\.`},
 		{from: `*`, to: `.*`},
 	}
@@ -110,6 +118,16 @@ func (ic *IgnoreChecker) generateRules() error {
 func convertIgnorePatternToRegex(pattern string) (s string, isDirRule bool) {
 	isDirRule = false
 	s = pattern
+	if strings.HasPrefix(s, regexDirectoryRulePrefix) {
+		isDirRule = true
+		s = strings.TrimPrefix(s, regexDirectoryRulePrefix)
+		return
+	}
+	if strings.HasPrefix(s, regexFileRulePrefix) {
+		isDirRule = false
+		s = strings.TrimPrefix(s, regexFileRulePrefix)
+		return
+	}
 	for _, r := range replacements {
 		s = strings.ReplaceAll(s, r.from, r.to)
 	}
