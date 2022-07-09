@@ -12,11 +12,6 @@ import (
 	"github.com/ozansz/gls/log"
 )
 
-type Shortcut struct {
-	Key     string
-	Command string
-}
-
 var (
 	currGrid          *tview.Grid            = nil
 	currTreeView      *tview.TreeView        = nil
@@ -160,12 +155,10 @@ func createHelpSideBar(app *tview.Application) *tview.Table {
 	table.SetSelectable(false, false).
 		SetSeparator('|').
 		SetBordersColor(BorderColor).
-		SetTitle("Shortcuts").
+		SetTitle("[ Shortcuts ]").
 		SetTitleColor(FileInfoTitleColor).
-		SetBorder(false)
-	table.SetBorder(true).
-		SetBorderColor(BorderColor).
-		SetTitle("Shortcuts")
+		SetBorder(true).
+		SetBorderColor(BorderColor)
 	for i, s := range keyboardShortcuts {
 		table.SetCell(i+1, 0, tview.NewTableCell(s.Key).SetTextColor(FileInfoAttrColor)).
 			SetCell(i+1, 1, tview.NewTableCell(s.Command).SetTextColor(FileInfoValueColor))

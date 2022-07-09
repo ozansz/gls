@@ -4,6 +4,11 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+type Shortcut struct {
+	Key     string
+	Command string
+}
+
 const (
 	GridTitleColor       = tcell.ColorRed
 	TreeViewTitleColor   = tcell.ColorGreen
