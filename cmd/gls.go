@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/ozansz/gls/gui"
 	"github.com/ozansz/gls/internal"
+	"github.com/ozansz/gls/internal/local"
 	"github.com/ozansz/gls/log"
 
 	"github.com/rivo/tview"
@@ -22,6 +24,8 @@ var (
 	noGUI         = flag.Bool("nogui", false, "do not show GUI")
 	sort          = flag.Bool("sort", true, "sort nodes by size")
 	sizeThreshold = flag.String("thresh", "", "size filter threshold")
+	ignoreFiles   = flag.String("ignore", "", "Comma-separated ignore files that specify which files/folders to exclude")
+	debug         = flag.Bool("debug", false, "Increase log verbosity")
 
 	formatters = map[string]internal.SizeFormatter{
 		"bytes": internal.SizeFormatterBytes,
@@ -35,6 +39,9 @@ func main() {
 	if *path == "" {
 		flag.Usage()
 		return
+	}
+	if *debug {
+		log.SetDebug(1)
 	}
 	logF, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -50,6 +57,10 @@ func main() {
 		log.Errorf("Unknown formatter: %s", *formatter)
 		flag.Usage()
 		return
+	}
+	ignoreChecker, err := getIgnoreChecker()
+	if err != nil {
+		log.Fatalf("Failed to get ignore checker: %v", err)
 	}
 	var sizeThreshBytes int64 = 0
 	if *sizeThreshold != "" {
@@ -69,6 +80,7 @@ func main() {
 		log.SetOutput(logF)
 		log.Infof("Started gls with path: %s, log file: %s, formatter: %s, gui: %t", *path, logFile, *formatter, !*noGUI)
 	}
+	log.Debugf("Ignore checking rules:\n%s", ignoreChecker.Dump())
 	var app *tview.Application
 	if !*noGUI {
 		app = gui.GetApp(*path, formatterFunc)
@@ -79,6 +91,7 @@ func main() {
 		defer wg.Done()
 		opts := []internal.FileTreeBuilderOption{
 			internal.WithSizeFormatter(formatterFunc),
+			internal.WithIgnoreChecker(ignoreChecker),
 		}
 		if *sort {
 			opts = append(opts, internal.WithSortingBySize())
@@ -112,4 +125,14 @@ func main() {
 	if *noGUI {
 		wg.Wait()
 	}
+}
+
+func getIgnoreChecker() (*local.IgnoreChecker, error) {
+	ignoreCheckerOpts := []local.IgnoreCheckerOption{}
+	if *ignoreFiles != "" {
+		for _, path := range strings.Split(*ignoreFiles, ",") {
+			ignoreCheckerOpts = append(ignoreCheckerOpts, local.WithRuleFile(path))
+		}
+	}
+	return local.NewIgnoreChecker(ignoreCheckerOpts...)
 }

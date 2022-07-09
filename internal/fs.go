@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/ozansz/gls/internal/local"
+	"github.com/ozansz/gls/log"
 )
 
 type FileTreeBuilderOption func(*FileTreeBuilder)
@@ -64,6 +67,7 @@ type FileTreeBuilder struct {
 	sort          bool
 	sizeFormatter SizeFormatter
 	sizeThreshold int64
+	ignoreChecker *local.IgnoreChecker
 }
 
 func NewFileTreeBuilder(path string, opts ...FileTreeBuilderOption) *FileTreeBuilder {
@@ -73,6 +77,7 @@ func NewFileTreeBuilder(path string, opts ...FileTreeBuilderOption) *FileTreeBui
 		sort:          false,
 		sizeFormatter: NoFormat,
 		sizeThreshold: 0,
+		ignoreChecker: nil,
 	}
 	for _, opt := range opts {
 		opt(b)
@@ -98,13 +103,19 @@ func WithSizeThreshold(thresh int64) FileTreeBuilderOption {
 	}
 }
 
+func WithIgnoreChecker(ic *local.IgnoreChecker) FileTreeBuilderOption {
+	return func(b *FileTreeBuilder) {
+		b.ignoreChecker = ic
+	}
+}
+
 func (b *FileTreeBuilder) Root() *Node {
 	return b.root
 }
 
 func (b *FileTreeBuilder) Build() error {
 	var err error
-	b.root, err = listDir(b.path, b.sizeThreshold)
+	b.root, err = listDir(b.path, b.sizeThreshold, b.ignoreChecker)
 	if err != nil {
 		return err
 	}
@@ -130,7 +141,7 @@ func (b *FileTreeBuilder) RootInfo() error {
 	return nil
 }
 
-func listDir(path string, sizeThreshold int64) (*Node, error) {
+func listDir(path string, sizeThreshold int64, ic *local.IgnoreChecker) (*Node, error) {
 	finfo, err := os.Lstat(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lstat %s: %v", path, err)
@@ -143,20 +154,33 @@ func listDir(path string, sizeThreshold int64) (*Node, error) {
 		Parent:           nil,
 		LastModification: finfo.ModTime(),
 	}
+	checkIgnore := func(f os.FileInfo) bool {
+		if ic == nil {
+			return true
+		}
+		return ic.ShouldIgnore(f.Name(), f.IsDir())
+	}
 	myWc := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go walkDir(path, &wg, root, myWc, sizeThreshold)
+	go walkDir(path, &wg, root, myWc, sizeThreshold, checkIgnore)
 	wg.Wait()
 	return root, nil
 }
 
-func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}, sizeThreshold int64) {
+func walkDir(dir string, wg *sync.WaitGroup,
+	root *Node, wc chan struct{},
+	sizeThreshold int64, checkIgnore func(os.FileInfo) bool) {
 	defer func() {
 		wg.Done()
 		wc <- struct{}{}
 	}()
 	visit := func(path string, f os.FileInfo, err error) error {
+		if checkIgnore(f) {
+			// Ignore this folder/file
+			log.Debugf("Ignoring %s/%s", dir, f.Name())
+			return filepath.SkipDir
+		}
 		if f.IsDir() && path != dir {
 			this := &Node{
 				Name:             f.Name(),
@@ -168,7 +192,7 @@ func walkDir(dir string, wg *sync.WaitGroup, root *Node, wc chan struct{}, sizeT
 			}
 			myWc := make(chan struct{})
 			wg.Add(1)
-			go walkDir(path, wg, this, myWc, sizeThreshold)
+			go walkDir(path, wg, this, myWc, sizeThreshold, checkIgnore)
 			<-myWc
 			root.IncrementSize(this.Size)
 			if this.Size >= sizeThreshold {

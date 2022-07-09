@@ -4,14 +4,32 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync/atomic"
 )
 
 var (
-	out io.Writer = os.Stdout
+	out   io.Writer = os.Stdout
+	debug int32     = 0
 )
+
+func SetDebug(d int32) {
+	atomic.StoreInt32(&debug, d)
+}
 
 func SetOutput(w io.Writer) {
 	out = w
+}
+
+func Debug(args ...interface{}) {
+	if atomic.LoadInt32(&debug) != 0 {
+		fmt.Fprintln(out, fmt.Sprintf("[DEBUG] "+fmt.Sprint(args...)))
+	}
+}
+
+func Debugf(format string, args ...interface{}) {
+	if atomic.LoadInt32(&debug) != 0 {
+		fmt.Fprintln(out, fmt.Sprintf("[DEBUG] "+format, args...))
+	}
 }
 
 func Info(args ...interface{}) {

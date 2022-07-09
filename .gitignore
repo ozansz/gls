@@ -28,3 +28,4 @@ test/
 *.pb.gz
 *.prof
 *.log
+.glsignore
