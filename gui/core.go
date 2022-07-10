@@ -9,6 +9,7 @@ import (
 
 	"github.com/ozansz/gls/internal"
 	"github.com/ozansz/gls/internal/info"
+	"github.com/ozansz/gls/internal/types"
 	"github.com/ozansz/gls/log"
 )
 
@@ -18,13 +19,13 @@ var (
 	currFileInfoTab   *tview.Table                 = nil
 	currLastLogView   *tview.TextView              = nil
 	currPath          string                       = ""
-	currSizeFormatter internal.SizeFormatter       = nil
-	originalRootNode  *internal.Node               = nil
+	currSizeFormatter types.SizeFormatter          = nil
+	originalRootNode  *types.Node                  = nil
 	isFormInputActive bool                         = false
 	markedFiles       map[*tview.TreeNode]struct{} = make(map[*tview.TreeNode]struct{})
 )
 
-func GetApp(path string, f internal.SizeFormatter) *tview.Application {
+func GetApp(path string, f types.SizeFormatter) *tview.Application {
 	currPath = path
 	currSizeFormatter = f
 	app := tview.NewApplication()
@@ -64,7 +65,7 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 			}
 			cNode := currTreeView.GetCurrentNode()
 			if event.Rune() == 'o' || event.Rune() == 'O' {
-				relPath := cNode.GetReference().(*internal.Node).RelativePath(currPath)
+				relPath := cNode.GetReference().(*types.Node).RelativePath(currPath)
 				if err := internal.OpenFile(relPath); err != nil {
 					log.Errorf("Could not open file %q: %v", relPath, err)
 					showMessage(app, fmt.Sprintf("Could not open file %q: %v", relPath, err), nil)
@@ -72,7 +73,7 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 				}
 			}
 			if event.Rune() == 'p' || event.Rune() == 'P' {
-				relPath := cNode.GetReference().(*internal.Node).RelativePath(currPath)
+				relPath := cNode.GetReference().(*types.Node).RelativePath(currPath)
 				askOpenFileWithProgram(app, relPath)
 			}
 			if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyDEL {
@@ -93,7 +94,7 @@ func GetApp(path string, f internal.SizeFormatter) *tview.Application {
 	return app.SetRoot(loadingPage, true).SetFocus(loadingPage)
 }
 
-func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
+func LoadTreeView(app *tview.Application, node *types.Node, path string) {
 	lastLogTextView := tview.NewTextView().
 		SetText("OK.").
 		SetTextColor(tcell.ColorWhite).
@@ -115,7 +116,7 @@ func LoadTreeView(app *tview.Application, node *internal.Node, path string) {
 		SetTitleAlign(tview.AlignCenter).
 		SetTitleColor(TreeViewTitleColor)
 	treeView.SetChangedFunc(func(node *tview.TreeNode) {
-		updateFileInfoTab(app, node.GetReference().(*internal.Node))
+		updateFileInfoTab(app, node.GetReference().(*types.Node))
 	})
 	treeView.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyTAB {
@@ -211,7 +212,7 @@ func createFileInfoTable(app *tview.Application) *tview.Table {
 	return table
 }
 
-func updateFileInfoTab(app *tview.Application, node *internal.Node) {
+func updateFileInfoTab(app *tview.Application, node *types.Node) {
 	if currFileInfoTab == nil {
 		log.Warning("updateFileInfoTab: currFileInfoTab is nil")
 		return
@@ -226,7 +227,7 @@ func updateFileInfoTab(app *tview.Application, node *internal.Node) {
 	sizeAttrCell := tview.NewTableCell("Size").
 		SetMaxWidth(FileInfoTabAttrWidth).
 		SetTextColor(FileInfoAttrColor)
-	sizeValueCell := tview.NewTableCell(fmt.Sprintf("%s (%d)", currSizeFormatter(node.Size), node.Size)).
+	sizeValueCell := tview.NewTableCell(fmt.Sprintf("%s real, %s on disk (%d)", currSizeFormatter(node.Size), currSizeFormatter(node.SizeOnDisk), node.Size)).
 		SetTextColor(FileInfoValueColor)
 	typeAttrCell := tview.NewTableCell("Type").
 		SetMaxWidth(FileInfoTabAttrWidth).
@@ -267,13 +268,13 @@ func createLoadingPage(app *tview.Application) tview.Primitive {
 	return loadingPage
 }
 
-func constructNativeTree(node *internal.Node) *tview.TreeNode {
+func constructNativeTree(node *types.Node) *tview.TreeNode {
 	t := constructTViewTreeFromNodeWithFormatter(node, currSizeFormatter)
 	setInfo(fmt.Sprintf("Constructed tree with %d files", node.FileCount()))
 	return t
 }
 
-func constructTViewTreeFromNodeWithFormatter(node *internal.Node, f internal.SizeFormatter) *tview.TreeNode {
+func constructTViewTreeFromNodeWithFormatter(node *types.Node, f types.SizeFormatter) *tview.TreeNode {
 	treeNode := tview.NewTreeNode(node.InfoWithSizeFormatter(f)).
 		SetReference(node).
 		SetSelectable(true).
@@ -290,7 +291,7 @@ func constructTViewTreeFromNodeWithFormatter(node *internal.Node, f internal.Siz
 
 func showCannotRemoveFolderWarning(app *tview.Application, tnode *tview.TreeNode) {
 	modal := tview.NewModal().
-		SetText(fmt.Sprintf("Cannot remove folder %q", tnode.GetReference().(*internal.Node).Name)).
+		SetText(fmt.Sprintf("Cannot remove folder %q", tnode.GetReference().(*types.Node).Name)).
 		AddButtons([]string{"OK"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "OK" {
@@ -302,7 +303,7 @@ func showCannotRemoveFolderWarning(app *tview.Application, tnode *tview.TreeNode
 
 func showCannotRemoveRootWarning(app *tview.Application, tnode *tview.TreeNode) {
 	modal := tview.NewModal().
-		SetText(fmt.Sprintf("Cannot remove root folder %q", tnode.GetReference().(*internal.Node).Name)).
+		SetText(fmt.Sprintf("Cannot remove root folder %q", tnode.GetReference().(*types.Node).Name)).
 		AddButtons([]string{"OK"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "OK" {
@@ -313,18 +314,18 @@ func showCannotRemoveRootWarning(app *tview.Application, tnode *tview.TreeNode) 
 }
 
 func askRemoveFile(app *tview.Application, tnode *tview.TreeNode) {
-	node := tnode.GetReference().(*internal.Node)
+	node := tnode.GetReference().(*types.Node)
 	modal := tview.NewModal().
 		SetText(fmt.Sprintf("Are you sure to remove %q?", node.RelativePath(currPath))).
 		AddButtons([]string{"Cancel", "Yes"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "Yes" {
-				if err := tnode.GetReference().(*internal.Node).Remove(currPath); err != nil {
+				if err := tnode.GetReference().(*types.Node).Remove(currPath); err != nil {
 					log.Errorf("Could not remove file %q: %v", node.Name, err)
 					showMessage(app, fmt.Sprintf("Cannot remove file %q: %v", node.Name, err.Error()), nil)
 					return
 				}
-				newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*internal.Node))
+				newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*types.Node))
 				newRoot.SetExpanded(true)
 				currTreeView.SetRoot(newRoot).
 					SetCurrentNode(newRoot)
@@ -379,11 +380,11 @@ func showSearchNameForm(app *tview.Application, isRegex bool) {
 		}
 		log.Infof("Searching for query: %s", query)
 		var err error
-		var opts *internal.TreeFilterOptions
+		var opts *types.TreeFilterOptions
 		if isRegex {
-			opts, err = internal.NewTreeFilterOpts("", query, searchCaseInsensitive, searchInverse)
+			opts, err = types.NewTreeFilterOpts("", query, searchCaseInsensitive, searchInverse)
 		} else {
-			opts, err = internal.NewTreeFilterOpts(query, "", searchCaseInsensitive, searchInverse)
+			opts, err = types.NewTreeFilterOpts(query, "", searchCaseInsensitive, searchInverse)
 		}
 		if err != nil {
 			errStr := fmt.Sprintf("Could not create filter options: %v", err)

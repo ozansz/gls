@@ -8,7 +8,9 @@ import (
 
 	"github.com/ozansz/gls/gui"
 	"github.com/ozansz/gls/internal"
+	"github.com/ozansz/gls/internal/fs"
 	"github.com/ozansz/gls/internal/local"
+	"github.com/ozansz/gls/internal/types"
 	"github.com/ozansz/gls/log"
 
 	"github.com/rivo/tview"
@@ -27,10 +29,10 @@ var (
 	ignoreFiles   = flag.String("ignore", "", "Comma-separated ignore files that specify which files/folders to exclude")
 	debug         = flag.Bool("debug", false, "Increase log verbosity")
 
-	formatters = map[string]internal.SizeFormatter{
-		"bytes": internal.SizeFormatterBytes,
-		"pow10": internal.SizeFormatterPow10,
-		"none":  internal.NoFormat,
+	formatters = map[string]types.SizeFormatter{
+		"bytes": types.SizeFormatterBytes,
+		"pow10": types.SizeFormatterPow10,
+		"none":  types.NoFormat,
 	}
 )
 
@@ -89,17 +91,17 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		opts := []internal.FileTreeBuilderOption{
-			internal.WithSizeFormatter(formatterFunc),
-			internal.WithIgnoreChecker(ignoreChecker),
+		opts := []fs.FileTreeBuilderOption{
+			fs.WithSizeFormatter(formatterFunc),
+			fs.WithIgnoreChecker(ignoreChecker),
 		}
 		if *sort {
-			opts = append(opts, internal.WithSortingBySize())
+			opts = append(opts, fs.WithSortingBySize())
 		}
 		if sizeThreshBytes > 0 {
-			opts = append(opts, internal.WithSizeThreshold(sizeThreshBytes))
+			opts = append(opts, fs.WithSizeThreshold(sizeThreshBytes))
 		}
-		b := internal.NewFileTreeBuilder(*path, opts...)
+		b := fs.NewFileTreeBuilder(*path, opts...)
 		if err := b.Build(); err != nil {
 			log.Fatalf("Failed to build file tree: %v", err)
 			return

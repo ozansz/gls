@@ -1,4 +1,4 @@
-package internal
+package types
 
 import (
 	"fmt"
@@ -13,10 +13,14 @@ import (
 )
 
 type Node struct {
-	mu               sync.Mutex
-	Name             string
-	Mode             os.FileMode
-	Size             int64
+	mu   sync.Mutex
+	Name string
+	Mode os.FileMode
+	Size int64
+
+	SizeOnDisk int64
+	// Blocks           int64
+
 	IsDir            bool
 	LastModification time.Time
 	Children         []*Node
@@ -39,7 +43,23 @@ func (n *Node) FileCount() int {
 	return 1
 }
 
-func (n *Node) clone() (*Node, error) {
+type cloneOpts struct {
+	discardFiles bool
+}
+
+func newNoOpCloneOpts() *cloneOpts {
+	return &cloneOpts{
+		discardFiles: false,
+	}
+}
+
+func (n *Node) CloneDirectoryStructure() (*Node, error) {
+	return n.clone(&cloneOpts{
+		discardFiles: true,
+	})
+}
+
+func (n *Node) clone(opts *cloneOpts) (*Node, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if n.Parent != nil {
@@ -54,14 +74,19 @@ func (n *Node) clone() (*Node, error) {
 		Parent:           nil,
 	}
 	for _, child := range n.Children {
-		root.AddChild(child.cloneWithParent(root))
+		if c := child.cloneWithParent(root, opts); c != nil {
+			root.AddChild(c)
+		}
 	}
 	return root, nil
 }
 
-func (n *Node) cloneWithParent(root *Node) *Node {
+func (n *Node) cloneWithParent(root *Node, opts *cloneOpts) *Node {
 	n.mu.Lock()
 	defer n.mu.Unlock()
+	if opts.discardFiles && !root.IsDir {
+		return nil
+	}
 	clone := &Node{
 		Name:             n.Name,
 		Mode:             n.Mode,
@@ -71,7 +96,9 @@ func (n *Node) cloneWithParent(root *Node) *Node {
 		Parent:           root,
 	}
 	for _, child := range n.Children {
-		clone.AddChild(child.cloneWithParent(clone))
+		if c := child.cloneWithParent(clone, opts); c != nil {
+			clone.AddChild(c)
+		}
 	}
 	return clone
 }
@@ -136,7 +163,7 @@ func (o *TreeFilterOptions) CheckRegexMatches(original string) bool {
 }
 
 func (n *Node) NewFilteredTree(opts *TreeFilterOptions) (*Node, error) {
-	tree, err := n.clone()
+	tree, err := n.clone(newNoOpCloneOpts())
 	if err != nil {
 		return nil, err
 	}
@@ -228,12 +255,12 @@ func (n *Node) AddChild(child *Node) {
 	n.Children = append(n.Children, child)
 }
 
-func (n *Node) SortChildrenBySize() {
+func (n *Node) SortChildrenBySizeOnDisk() {
 	for _, c := range n.Children {
-		c.SortChildrenBySize()
+		c.SortChildrenBySizeOnDisk()
 	}
 	sort.Slice(n.Children, func(i, j int) bool {
-		return n.Children[i].Size > n.Children[j].Size
+		return n.Children[i].SizeOnDisk > n.Children[j].SizeOnDisk
 	})
 }
 
@@ -263,7 +290,7 @@ func (n *Node) InfoWithSizeFormatter(f SizeFormatter) string {
 }
 
 func (n *Node) infoWithLevel(level int, f SizeFormatter) string {
-	return fmt.Sprintf("%s%s [%s]", strings.Repeat("  ", level), n.Name, f(n.Size))
+	return fmt.Sprintf("%s%s [%s]", strings.Repeat("  ", level), n.Name, f(n.SizeOnDisk))
 }
 
 func (n *Node) RelativePath(parent string) string {
