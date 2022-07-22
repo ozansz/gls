@@ -21,11 +21,11 @@ const (
 )
 
 var (
-	path          = flag.String("path", "", "path to list")
-	formatter     = flag.String("fmt", "bytes", "formatter to use: bytes, pow10 or none")
-	noGUI         = flag.Bool("nogui", false, "do not show GUI")
+	path          = flag.String("path", "", "path to run on (required)")
+	formatter     = flag.String("fmt", "bytes", "size formatter, one of bytes, pow10 or none")
+	noGUI         = flag.Bool("nogui", false, "text-only mode")
 	sort          = flag.Bool("sort", true, "sort nodes by size")
-	sizeThreshold = flag.String("thresh", "", "size filter threshold")
+	sizeThreshold = flag.String("thresh", "", "size filter threshold, e.g. 10M, 100K, etc.")
 	ignoreFiles   = flag.String("ignore", "", "Comma-separated ignore files that specify which files/folders to exclude")
 	debug         = flag.Bool("debug", false, "Increase log verbosity")
 
