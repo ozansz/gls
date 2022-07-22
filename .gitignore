@@ -30,3 +30,4 @@ test/
 *.log
 .glsignore
 dist/
+.idea
