@@ -30,3 +30,5 @@ test/
 *.log
 .glsignore
 dist/
+.idea
+.DS_Store
