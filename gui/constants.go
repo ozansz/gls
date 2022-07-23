@@ -82,5 +82,9 @@ var (
 			Key:     "u",
 			Command: "unmark all",
 		},
+		{
+			Key:     "n",
+			Command: "create new file",
+		},
 	}
 )
