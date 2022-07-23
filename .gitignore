@@ -31,3 +31,4 @@ test/
 .glsignore
 dist/
 .idea
+.DS_Store
