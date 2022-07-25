@@ -16,7 +16,7 @@ $ cd gls
 $ go build cmd/gls.go
 ```
 
-After you run `go build command`, an executable file name `gls` is created. You can modify `.bashrc`, `.zshrc`, or another 
+After you run `go build` command, an executable file name `gls` is created. You can modify `.bashrc`, `.zshrc`, or another 
 file depending on the terminal you are using by adding the full path of the executable file.
 
 ```bash
