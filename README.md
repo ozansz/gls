@@ -11,7 +11,7 @@ It’s `ls` + `du` + `tree` with interactive GUI on your terminal! `gls` is crea
 Installing `gls` on your machine is pretty simple: just clone the repo and run `cmd/gls.go`:
 
 ```bash
-$ git clone github.com/ozansz/gls
+$ git clone https://github.com/ozansz/gls
 $ cd gls
 $ go build cmd/gls.go
 ```
