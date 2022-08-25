@@ -11,9 +11,21 @@ It’s `ls` + `du` + `tree` with interactive GUI on your terminal! `gls` is crea
 Installing `gls` on your machine is pretty simple: just clone the repo and run `cmd/gls.go`:
 
 ```bash
-$ git clone github.com/ozansz/gls
+$ git clone https://github.com/ozansz/gls
 $ cd gls
-$ go run cmd/gls.go
+$ go build cmd/gls.go
+```
+
+After you run `go build` command, an executable file name `gls` is created. You can modify `.bashrc`, `.zshrc`, or another 
+file depending on the terminal you are using by adding the full path of the executable file.
+
+```bash
+# Open .zshrc, .bashrc, or whatever you are using with a text editor.
+$ alias gls='~/gls/gls'	# add full path of the gls executable file. 
+# Save file and exit.
+$ source .bashrc
+# Reopen your terminal and try the command
+$ gls -path gls
 ```
 
 > An install script will come in next feature update and you will be able to just run `gls` on your terminal!

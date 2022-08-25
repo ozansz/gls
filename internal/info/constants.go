@@ -3,10 +3,12 @@ package info
 import "fmt"
 
 const (
-	Project = "gls"
-	Version = "0.1.0"
+	Project      = "gls"
+	VersionMajor = 1
+	VersionMinor = 0
+	VersionPatch = 0
 )
 
 func ProjectNameWithVersion() string {
-	return fmt.Sprintf("%s v%s", Project, Version)
+	return fmt.Sprintf("%s v%d.%d.%d", Project, VersionMajor, VersionMinor, VersionPatch)
 }
