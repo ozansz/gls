@@ -2,21 +2,9 @@ package internal
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
-)
-
-type ByteSize int64
-
-const (
-	B  ByteSize = 1
-	KB ByteSize = 1 << (10 * iota)
-	MB
-	GB
-	TB
-	PB
 )
 
 func ParseByteSize(s string) (ByteSize, int64, error) {
@@ -61,13 +49,4 @@ func OpenFile(path string) error {
 
 func OpenFileWithProgram(path, program string) error {
 	return exec.Command(program, path).Run()
-}
-
-// FileExist checks whether the given file exists. Returns true if the file
-// exists.
-func FileExist(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
-	}
-	return true
 }

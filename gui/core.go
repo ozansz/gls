@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -491,31 +490,26 @@ func createNewFile(app *tview.Application) {
 		fileName = form.GetFormItem(0).(*tview.InputField).GetText()
 		if fileName == "" {
 			log.Errorf("File name cannot be empty")
-			showMessage(app, fmt.Sprintf("File name cannot be empty"), nil)
+			showMessage(app, "File name cannot be empty", nil)
 			return
 		}
-		pwd, _ := os.Getwd()
-		fullPath := fmt.Sprintf("%s/%s/%s", pwd, currPath, fileName)
-		if internal.FileExist(fullPath) {
+		node := currTreeView.GetCurrentNode().GetReference().(*types.Node)
+		if !node.IsDir {
+			node = node.Parent
+		}
+		if err := node.CreateChild(fileName, currPath); err != nil {
 			isFormInputActive = false
-			log.Errorf("File is already exist")
-			showMessage(app, fmt.Sprintf("File is already exist"), nil)
+			log.Errorf("Could not create file %q: %v", fileName, err)
+			showMessage(app, fmt.Sprintf("Could not create file %q: %v", fileName, err.Error()), nil)
 			return
 		}
-		_, err := os.Create(fullPath)
-		if err != nil {
-			isFormInputActive = false
-			log.Errorf("New file couldn't created: %+v", err)
-			showMessage(app, fmt.Sprintf("New file couldn't created: %+v", err), nil)
-			return
-		}
-		log.Infof("New file is created: %s", fileName)
+		log.Infof("Created file: %s", fileName)
 		newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*types.Node))
 		newRoot.SetExpanded(true)
 		currTreeView.SetRoot(newRoot).SetCurrentNode(newRoot)
 		app.SetRoot(currGrid, true).SetFocus(currGrid)
 	}).
-		AddButton("Quit", func() {
+		AddButton("Cancel", func() {
 			isFormInputActive = false
 			app.SetRoot(currGrid, true).SetFocus(currGrid)
 		})

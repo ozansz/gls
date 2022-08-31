@@ -7,8 +7,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
+	"github.com/ozansz/gls/internal"
 	"github.com/ozansz/gls/internal/analyzer"
 )
 
@@ -241,6 +243,43 @@ func (n *Node) RemoveChild(c *Node) {
 			return
 		}
 	}
+}
+
+func (n *Node) CreateChild(fileName, parentPath string) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if !n.IsDir {
+		return fmt.Errorf("cannot create file under a file (%s)", n.Name)
+	}
+	filePath := n.RelativePath(parentPath) + "/" + fileName
+	if _, err := os.Stat(filePath); !os.IsNotExist(err) {
+		return fmt.Errorf("file with path %s already exists", filePath)
+	}
+	f, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("could not create file %s: %v", filePath, err)
+	}
+	finfo, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("could not stat file %s: %v", filePath, err)
+	}
+	st, ok := finfo.Sys().(*syscall.Stat_t)
+	if !ok {
+		return fmt.Errorf("could not get stat_t for file %s", filePath)
+	}
+	n.Children = append(n.Children, &Node{
+		Name:             finfo.Name(),
+		Mode:             finfo.Mode(),
+		Size:             st.Size,
+		SizeOnDisk:       st.Size * internal.SizeOfBlock,
+		IsDir:            finfo.IsDir(),
+		LastModification: finfo.ModTime(),
+		Parent:           n,
+	})
+	if err = f.Close(); err != nil && err != os.ErrClosed {
+		return fmt.Errorf("error while closing the newly created file %s: %v", filePath, err)
+	}
+	return nil
 }
 
 func (n *Node) IncrementSize(size int64) {
