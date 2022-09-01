@@ -6,13 +6,10 @@ import (
 	"sort"
 	"syscall"
 
+	"github.com/ozansz/gls/internal"
 	"github.com/ozansz/gls/internal/local"
 	"github.com/ozansz/gls/internal/types"
 	"github.com/ozansz/gls/log"
-)
-
-const (
-	SizeOfBlock = 512
 )
 
 type WalkOptions struct {
@@ -34,7 +31,7 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 		Name:             f.Name(),
 		Mode:             f.Mode(),
 		Size:             st.Size,
-		SizeOnDisk:       st.Blocks * SizeOfBlock,
+		SizeOnDisk:       st.Blocks * internal.SizeOfBlock,
 		IsDir:            f.IsDir(),
 		LastModification: f.ModTime(),
 	}
