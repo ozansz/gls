@@ -259,21 +259,21 @@ func (n *Node) CreateChild(fileName, parentPath string) error {
 	if err != nil {
 		return fmt.Errorf("could not create file %s: %v", filePath, err)
 	}
-	finfo, err := f.Stat()
+	fInfo, err := f.Stat()
 	if err != nil {
 		return fmt.Errorf("could not stat file %s: %v", filePath, err)
 	}
-	st, ok := finfo.Sys().(*syscall.Stat_t)
+	st, ok := fInfo.Sys().(*syscall.Stat_t)
 	if !ok {
 		return fmt.Errorf("could not get stat_t for file %s", filePath)
 	}
 	n.Children = append(n.Children, &Node{
-		Name:             finfo.Name(),
-		Mode:             finfo.Mode(),
+		Name:             fInfo.Name(),
+		Mode:             fInfo.Mode(),
 		Size:             st.Size,
 		SizeOnDisk:       st.Size * internal.SizeOfBlock,
-		IsDir:            finfo.IsDir(),
-		LastModification: finfo.ModTime(),
+		IsDir:            fInfo.IsDir(),
+		LastModification: fInfo.ModTime(),
 		Parent:           n,
 	})
 	if err = f.Close(); err != nil && err != os.ErrClosed {
