@@ -58,6 +58,9 @@ func GetApp(path string, f types.SizeFormatter) *tview.Application {
 			if event.Rune() == 'u' || event.Rune() == 'U' {
 				unmarkAll(app)
 			}
+			if event.Rune() == 'n' || event.Rune() == 'N' {
+				createNewFile(app)
+			}
 			// Commands below here are about the current hovered file.
 			if currTreeView == nil {
 				log.Warning("Tree view is nil")
@@ -473,4 +476,43 @@ func unmarkAll(app *tview.Application) {
 		log.Debugf("Removed node with name %q from marked files (unmarkAll)", n.GetText())
 	}
 	log.Debugf("markedFiles after unmarkAll: %#v", markedFiles)
+}
+
+func createNewFile(app *tview.Application) {
+	var fileName string
+	form := tview.NewForm().
+		AddInputField("File name", "", 20, nil, nil)
+
+	form.AddButton("Create", func() {
+		defer func() {
+			isFormInputActive = false
+		}()
+		fileName = form.GetFormItem(0).(*tview.InputField).GetText()
+		if fileName == "" {
+			log.Errorf("File name cannot be empty")
+			showMessage(app, "File name cannot be empty", nil)
+			return
+		}
+		node := currTreeView.GetCurrentNode().GetReference().(*types.Node)
+		if !node.IsDir {
+			node = node.Parent
+		}
+		if err := node.CreateChild(fileName, currPath); err != nil {
+			isFormInputActive = false
+			log.Errorf("Could not create file %q: %v", fileName, err)
+			showMessage(app, fmt.Sprintf("Could not create file %q: %v", fileName, err.Error()), nil)
+			return
+		}
+		log.Infof("Created file: %s", fileName)
+		newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*types.Node))
+		newRoot.SetExpanded(true)
+		currTreeView.SetRoot(newRoot).SetCurrentNode(newRoot)
+		app.SetRoot(currGrid, true).SetFocus(currGrid)
+	}).
+		AddButton("Cancel", func() {
+			isFormInputActive = false
+			app.SetRoot(currGrid, true).SetFocus(currGrid)
+		})
+	isFormInputActive = true
+	app.SetRoot(form, true).SetFocus(form)
 }
