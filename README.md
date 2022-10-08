@@ -8,38 +8,19 @@
 It’s `ls` + `du` + `tree` with interactive TUI on your terminal! `gls` is created to easily view, filter and search your files, folders and directories with their size whenever you need to open up some storage space. It wouldn’t be wrong to say that `gls` is a minimal yet powerful file manager CLI tool.
 
 ##  Installation
-Installing `gls` on your machine is pretty simple: just clone the repo and build `cmd/gls.go`:
+Installing `gls` on your machine is pretty simple: just clone the repo and install `cmd/gls.go`:
 
 ```bash
 $ git clone https://github.com/ozansz/gls
 $ cd gls
-$ go build cmd/gls.go
+$ go install ./cmd/gls.go
 ```
 
-After you run `go build` command, an executable file name `gls` is created. You can modify `.bashrc`, `.zshrc`, or another 
-file depending on the terminal you are using by adding the full path of the executable file:
+After you run `go install` command, an executable file name `gls` is created in `$GOPATH/bin`. Now, you can simply run `gls` in terminal:
 
 ```bash
-# Open .zshrc, .bashrc, or whatever you are using with a text editor. 
-
-alias gls='~/gls/gls'	# add full path of the gls executable file.
-
-# Save file and exit.
+$ gls
 ```
-
-Then,
-
-```bash
-$ source ~/.bashrc # configuration file path for your shell 
-
-OR
-
-$ exec zsh # For Zsh users
-
-$ gls -path gls
-```
-
-> An install script will come in next feature update and you will be able to just run `gls` on your terminal!
 
 ## Usage
 There are two running modes of `gls`: TUI and text-based.
