@@ -5,52 +5,44 @@
 [![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 [![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
 
-It’s `ls` + `du` + `tree` with interactive GUI on your terminal! `gls` is created to easily view, filer and search your files and folders with their size whenever you need to open up some storage space. It wouldn’t be wrong to say that `gls` is a minimal yet powerful file manager CLI tool.
+It’s `ls` + `du` + `tree` with interactive TUI on your terminal! `gls` is created to easily view, filter and search your files, folders and directories with their size whenever you need to open up some storage space. It wouldn’t be wrong to say that `gls` is a minimal yet powerful file manager CLI tool.
 
 ##  Installation
-Installing `gls` on your machine is pretty simple: just clone the repo and run `cmd/gls.go`:
+Installing `gls` on your machine is pretty simple: just clone the repo and install `cmd/gls.go`:
 
 ```bash
 $ git clone https://github.com/ozansz/gls
 $ cd gls
-$ go build cmd/gls.go
+$ go install ./cmd/gls.go
 ```
 
-After you run `go build` command, an executable file name `gls` is created. You can modify `.bashrc`, `.zshrc`, or another 
-file depending on the terminal you are using by adding the full path of the executable file.
+After you run `go install` command, an executable file name `gls` is created in `$GOPATH/bin`. Now, you can simply run `gls` in terminal:
 
 ```bash
-# Open .zshrc, .bashrc, or whatever you are using with a text editor.
-$ alias gls='~/gls/gls'	# add full path of the gls executable file. 
-# Save file and exit.
-$ source .bashrc
-# Reopen your terminal and try the command
-$ gls -path gls
+$ gls
 ```
 
-> An install script will come in next feature update and you will be able to just run `gls` on your terminal!
-
 ## Usage
-There are two running modes of `gls`: GUI and text-based.
+There are two running modes of `gls`: TUI and text-based.
 
-The GUI mode is interactive and you will be able to use all of the [features](#features) of `gls`, such as searching by text/regular expression, traversing on the file tree, creating/opening/deleting files and many other things,  until you close the program.
+The TUI mode is interactive and you will be able to use all of the [features](#features) of `gls`, such as searching by text/regular expression, traversing on the file tree, creating/opening/deleting files and many other things,  until you close the program.
 
 The text mode however, is fairly simple and is a literal combination of running `tree` and `du` altogether, with some additional features.
 
-### Default usage (GUI)
-The command below runs `gls` with GUI, which is the default mode. It parses the file tree under the specified path along with the file and folder sizes on disk, then shows the tree view of the parsed tree.
+### Default usage (TUI)
+The command below runs `gls` with TUI, which is the default mode. It parses the file tree under the specified path along with the file and folder sizes on disk, then shows the tree view of the parsed tree.
 
 ```bash
-go run cmd/gls.go —-path ~/Downloads
+gls -path ~/Downloads
 ```
 
-![Screenshot of the GUI mode of gls](./img/gui-screenshot.png)
+![Screenshot of the TUI mode of gls](./img/gui-screenshot.png)
 
 ### Text mode
 The command below does the same parsing process as the command above does. Except, this one just dumps the parsed tree as a the `tree` command does with the file/folder sizes and permissions, to the terminal.
 
 ```bash
-go run cmd/gls.go —-nogui —-path ~/Documents
+gls -nogui -path ~/Documents
 ```
 
 ## Features
@@ -67,7 +59,7 @@ go run cmd/gls.go —-nogui —-path ~/Documents
 * Create (similar to `touch`) and open files to edit
 * Walk on the file tree, collapse and expand nodes easily
 
-### GUI shortcuts
+### TUI shortcuts
 
 | Shortcut           | Command            | Description                                                                                                                                                                |
 | ------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,21 +80,35 @@ go run cmd/gls.go —-nogui —-path ~/Documents
 | `TAB`, `SPACE`, `ENTER`  | toggle expand node | Expands the node if currently collapsed, and vice versa, the selected (on hover) file or folder                                                                            |
 | `ARROW KEYS`, `SCROLL` | navigate           | Navigates between nodes in the file tree view                                                                                                                              |
 
+### Configuration
+
+You can freely change the key bindings and shortcuts or configure the program for your needs from `gui/core.go` .
+
+After your changes, run
+
+```bash
+go build cmd/gls.go
+```
+in the project directory.
+
+In addition, if you think that your configurations or other changes seem necessary to improve the project, your contributions will be welcomed :)
+
 ### Command line arguments
 
 ```bash
---debug
+-debug
     	Increase log verbosity
---fmt string
+-fmt string
    		size formatter, one of bytes, pow10 or none (default "bytes")
---ignore string
+-ignore string
     	Comma-separated ignore files that specify which files folders to exclude
---nogui
+-nogui
     	text-only mode
---path string
+-path string
     	path to run on (required)
---sort
+-sort
     	sort nodes by size (default true)
---thresh string
+-thresh string
     	size filter threshold, e.g. 10M, 100K, etc.
 ```
+> You can also read this section from terminal by using `gls` without parameters.
