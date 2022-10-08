@@ -7,6 +7,18 @@
 
 It’s `ls` + `du` + `tree` with interactive TUI on your terminal! `gls` is created to easily view, filter and search your files, folders and directories with their size whenever you need to open up some storage space. It wouldn’t be wrong to say that `gls` is a minimal yet powerful file manager CLI tool.
 
+## Table of Contents
+
+* [Installation](#installation)
+* [Usage](#usage)
+	+ [Default usage (TUI)](#default-usage-tui)
+	+ [Text mode](#text-mode)
+* [Features](#features)
+	+ [TUI shortcuts](#tui-shortcuts)
+	+ [Configuration](#configuration)
+	+ [Command line arguments](#command-line-arguments)
+* [How to Contribute](#how-to-contribute)
+
 ##  Installation
 Installing `gls` on your machine is pretty simple: just clone the repo and install `cmd/gls.go`:
 
@@ -112,3 +124,11 @@ In addition, if you think that your configurations or other changes seem necessa
     	size filter threshold, e.g. 10M, 100K, etc.
 ```
 > You can also read this section from terminal by using `gls` without parameters.
+
+## How to Contribute
+
+You are very welcome to contribute to `gls`! Here are a few steps to guide you how to start contributing:
+
+1. Check [the open issues tab](https://github.com/ozansz/gls/issues) to see if there are any issue you may be interested in fixing. You can also list the [issues with only the good-first-issue tag](https://github.com/ozansz/gls/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+
+2. Check the [contributing guide](CONTRIBUTING.md) for more explanation on setting up the development environment, opening the PR, etc.
