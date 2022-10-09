@@ -1,15 +1,19 @@
 package fs
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
+	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/ozansz/gls/internal"
 	"github.com/ozansz/gls/internal/local"
 	"github.com/ozansz/gls/internal/types"
 	"github.com/ozansz/gls/log"
+	"golang.org/x/sync/errgroup"
 )
 
 type WalkOptions struct {
@@ -41,26 +45,44 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 			log.Warningf("%s: %v", path, err)
 			return root, nil
 		}
+
+		eg, _ := errgroup.WithContext(context.Background())
+		rl := &sync.Mutex{}
+
 		for _, name := range names {
-			child, err := Walk(path+"/"+name, opts)
-			if err != nil {
-				return nil, err
-			}
-			child.Parent = root
-			root.Size += child.Size
-			root.SizeOnDisk += child.SizeOnDisk
-			threshOK := child.Size >= opts.SizeThreshold
-			ignoreOK := true
-			if opts.IgnoreChecker != nil && opts.IgnoreChecker.ShouldIgnore(child.Name, child.IsDir) {
-				ignoreOK = false
-			}
-			if !ignoreOK {
-				log.Debugf("ignore: %s", path+"/"+child.Name)
-			}
-			if threshOK && ignoreOK {
-				root.Children = append(root.Children, child)
-			}
+			var curr = name
+			eg.Go(func() error {
+				child, err := Walk(path+"/"+curr, opts)
+				if err != nil {
+					return err
+				}
+				child.Parent = root
+				rl.Lock()
+				defer rl.Unlock()
+				root.Size += child.Size
+				root.SizeOnDisk += child.SizeOnDisk
+				threshOK := child.Size >= opts.SizeThreshold
+				ignoreOK := true
+				if opts.IgnoreChecker != nil && opts.IgnoreChecker.ShouldIgnore(child.Name, child.IsDir) {
+					ignoreOK = false
+				}
+				if !ignoreOK {
+					log.Debugf("ignore: %s", path+"/"+child.Name)
+				}
+				if threshOK && ignoreOK {
+					root.Children = append(root.Children, child)
+				}
+				return nil
+			})
 		}
+
+		if err := eg.Wait(); err != nil {
+			return nil, err
+		}
+
+		sort.Slice(root.Children, func(i, j int) bool {
+			return strings.Compare(root.Children[i].Name, root.Children[j].Name) == -1
+		})
 	}
 	return root, nil
 }
@@ -76,6 +98,5 @@ func readDirNames(dirname string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(names)
 	return names, nil
 }
