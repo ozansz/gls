@@ -6,6 +6,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.5.1
 	github.com/h2non/filetype v1.1.3
 	github.com/rivo/tview v0.0.0-20220703182358-a13d901d3386
+	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 )
 
 require (
