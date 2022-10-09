@@ -58,6 +58,7 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 				}
 				child.Parent = root
 				rl.Lock()
+				defer rl.Unlock()
 				root.Size += child.Size
 				root.SizeOnDisk += child.SizeOnDisk
 				threshOK := child.Size >= opts.SizeThreshold
@@ -71,7 +72,6 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 				if threshOK && ignoreOK {
 					root.Children = append(root.Children, child)
 				}
-				rl.Unlock()
 				return nil
 			})
 		}
