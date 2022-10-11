@@ -1,0 +1,11 @@
+GridTitleColor=blue
+TreeViewTitleColor=yellow
+FileInfoTitleColor=lightgreen
+DirectoryColor=red
+BorderColor=white
+FileInfoAttrColor=orange
+FileInfoValueColor=pink
+SearchFormTitleColor=brown
+UnmarkedFileColor=deeppink
+MarkedFileColor=gray
+FileInfoTabAttrWidth=30
