@@ -272,7 +272,7 @@ func (n *Node) CreateChild(fileName, parentPath string) error {
 		Name:             fInfo.Name(),
 		Mode:             fInfo.Mode(),
 		Size:             size,
-		SizeOnDisk:       size * internal.SizeOfBlock,
+		SizeOnDisk:       size * internal.UNIXSizeOfBlock,
 		IsDir:            fInfo.IsDir(),
 		LastModification: fInfo.ModTime(),
 		Parent:           n,

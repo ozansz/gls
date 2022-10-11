@@ -27,7 +27,7 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 	}
 	//implements os dependent proper methods.
 	var diskUsage helper.DiskUsage = &helper.FsInfo{}
-	size, _ := diskUsage.GetSize(f)
+	size, err := diskUsage.GetSize(f)
 	if err != nil {
 		return nil, err
 	}
