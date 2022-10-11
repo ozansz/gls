@@ -13,6 +13,8 @@ type Shortcut struct {
 	Command string
 }
 
+const configurationFile = ".glsrc"
+
 var (
 	GridTitleColor       = tcell.ColorRed
 	TreeViewTitleColor   = tcell.ColorGreen
@@ -98,7 +100,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("HOME directory couldn't get")
 	}
-	path := dirname + "/.glsrc"
+	path := dirname + "/" + configurationFile
 	err = readGLSRCFile(path)
 	if err != nil {
 		return
