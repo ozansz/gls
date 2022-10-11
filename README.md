@@ -105,6 +105,28 @@ in the project directory.
 
 In addition, if you think that your configurations or other changes seem necessary to improve the project, your contributions will be welcomed :)
 
+### Customize color palette
+
+You can customize the color palette with `.glsrc` file.  The only thing you need to do is create a `.glsrc` file in `$HOME`
+directory and set the colors as key-value pairs. An example is below:
+
+```text
+GridTitleColor=blue
+TreeViewTitleColor=yellow
+FileInfoTitleColor=lightgreen
+DirectoryColor=red
+BorderColor=white
+FileInfoAttrColor=orange
+FileInfoValueColor=pink
+SearchFormTitleColor=brown
+UnmarkedFileColor=deeppink
+MarkedFileColor=gray
+FileInfoTabAttrWidth=30
+```
+
+When you run the program, the color palette values are overridden with values in `.glsrc` file. The file must be stored in 
+`$HOME` directory and the file name must be `.glsrc`. Otherwise, the program uses the default color palette values.  
+
 ### Command line arguments
 
 ```bash
