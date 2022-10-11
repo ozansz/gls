@@ -13,4 +13,5 @@ const (
 
 const (
 	SizeOfBlock = 512
+	ClusterSize = 4096
 )
