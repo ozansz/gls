@@ -2,6 +2,8 @@ package gui
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -60,6 +62,9 @@ func GetApp(path string, f types.SizeFormatter) *tview.Application {
 			}
 			if event.Rune() == 'n' || event.Rune() == 'N' {
 				createNewFile(app)
+			}
+			if event.Rune() == 'v' || event.Rune() == 'V' {
+				openVIM(app)
 			}
 			// Commands below here are about the current hovered file.
 			if currTreeView == nil {
@@ -515,4 +520,18 @@ func createNewFile(app *tview.Application) {
 		})
 	isFormInputActive = true
 	app.SetRoot(form, true).SetFocus(form)
+}
+
+// openVIM opens the file in VIM editor.
+func openVIM(app *tview.Application) {
+	cNode := currTreeView.GetCurrentNode()
+	path := cNode.GetReference().(*types.Node).RelativePath(currPath)
+	app.Suspend(func() {
+		cmd := exec.Command("vim", path)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		if err := cmd.Run(); err != nil {
+			log.Error(err)
+		}
+	})
 }
