@@ -5,8 +5,8 @@ import "fmt"
 const (
 	Project      = "gls"
 	VersionMajor = 1
-	VersionMinor = 0
-	VersionPatch = 0
+	VersionMinor = 1
+	VersionPatch = 1
 )
 
 func ProjectNameWithVersion() string {
