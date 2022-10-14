@@ -92,6 +92,10 @@ var (
 			Key:     "n",
 			Command: "create new file",
 		},
+		{
+			Key:     "v",
+			Command: "open file in VIM",
+		},
 	}
 )
 

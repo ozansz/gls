@@ -73,24 +73,24 @@ gls -nogui -path ~/Documents
 
 ### TUI shortcuts
 
-| Shortcut           | Command            | Description                                                                                                                                                                |
-| ------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `q`, `ESC`, `ˆC`        | quit               | Exits the program                                                                                                                                                          |
-| `c`                  | collapse           | Collapses all nodes in the file tree view                                                                                                                                  |
-| `e`                  | expand             | Expands all nodes in the file tree view                                                                                                                                    |
-| `s`                  | search             | Opens modal to search nodes (files and folders) by name                                                                                                                    |
-| `r`                  | regex search       | Same as search, but you can search using regular expressions                                                                                                               |
+| Shortcut           | Command            | Description                                                                                                                                                                    |
+| ------------------ |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `q`, `ESC`, `ˆC`        | quit               | Exits the program                                                                                                                                                              |
+| `c`                  | collapse           | Collapses all nodes in the file tree view                                                                                                                                      |
+| `e`                  | expand             | Expands all nodes in the file tree view                                                                                                                                        |
+| `s`                  | search             | Opens modal to search nodes (files and folders) by name                                                                                                                        |
+| `r`                  | regex search       | Same as search, but you can search using regular expressions                                                                                                                   |
 | `x`                  | restore            | Loads the original file tree view, mostly used after `search` and `regex search`                                                                                               |
-| `o`                  | open               | Opens the selected (on hover) file/folder with the default program                                                                                                         |
-| `p`                  | open               | Opens modal to specify the executable path which will be used to open the selected (on hover) file/folder                                                                  |
-| `BACKSPACE` , `DEL`    | remove             | Removes the selected (on hover) file. Folder removal is currently not supported                                                                                            |
+| `o`                  | open               | Opens the selected (on hover) file/folder with the default program                                                                                                             |
+| `p`                  | open               | Opens modal to specify the executable path which will be used to open the selected (on hover) file/folder                                                                      |
+| `BACKSPACE` , `DEL`    | remove             | Removes the selected (on hover) file. Folder removal is currently not supported                                                                                                |
 | `m`                  | mark               | Marks/unmarks the selected (on hover) file or folder. Marked nodes can be used later for `duplicate` and `move`                                                                |
-| `u`                  | unmark             | Unmarks all the marked files and folders                                                                                                                                   |
+| `u`                  | unmark             | Unmarks all the marked files and folders                                                                                                                                       |
 | `n`                  | new                | Create and (optionally) open file **(will be available in next update)**                                                                                                       |
 | `d`                  | duplicate          | Copy/pastes the marked files and folders to a specified destination. The destination is specified by the text input of the opened modal **(will be available in next update)** |
-| `v`                  | move               | Moves the marked files and folders to a specified destination. The destination is specified by the text input of the opened modal **(will be available in next update)**       |
-| `TAB`, `SPACE`, `ENTER`  | toggle expand node | Expands the node if currently collapsed, and vice versa, the selected (on hover) file or folder                                                                            |
-| `ARROW KEYS`, `SCROLL` | navigate           | Navigates between nodes in the file tree view                                                                                                                              |
+| `v`                  | open file in vim   | Opens file in VIM editor.                                                                                                                                                      |
+| `TAB`, `SPACE`, `ENTER`  | toggle expand node | Expands the node if currently collapsed, and vice versa, the selected (on hover) file or folder                                                                                |
+| `ARROW KEYS`, `SCROLL` | navigate           | Navigates between nodes in the file tree view                                                                                                                                  |
 
 ### Configuration
 
