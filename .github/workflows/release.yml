@@ -35,28 +35,3 @@ jobs:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           # GitHub sets this automatically
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-brews:
-  -
-    name: gls
-    tap:
-      owner: ozansz
-      name: homebrew-gls
-
-    url_template: "https://github.com/ozansz/gls/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-
-    commit_author:
-      name: goreleaserbot
-      email: bot@goreleaser.com
-
-    commit_msg_template: "Brew formula update for gls version {{ .Tag }}"
-
-    # Folder inside the repository to put the formula.
-    # Default is the root folder.
-    folder: Formula
-
-    homepage: "https://github.com/ozansz/gls"
-
-    description: "Minimal file manager with terminal UI."
-
-    license: "MIT"
