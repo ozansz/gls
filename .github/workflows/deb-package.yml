@@ -1,0 +1,48 @@
+name: Build .deb package and create checksum
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+      
+      - name: Build binaries
+        run: go build -v ./...
+      
+      - name: Prepare directories for .deb packaging
+        run: |
+          mkdir gls
+          mkdir -p gls/usr/local/bin
+          cp gls gls/usr/local/bin
+          
+      - name: Build .deb package
+        uses: jiro4989/build-deb-action@v2
+        with:
+          package: gls
+          package_root: gls
+          maintainer: Ozan Sazak <ozan.sazak@protonmail.ch>
+          version: ${{ github.ref }} # refs/tags/v*.*.*
+          arch: 'amd64'
+          desc: 'minimal file manager with terminal UI #Go'
+
+      - name: Checksum of package
+        run: |
+          sha256sum gls_*.deb > $(ls gls_*.deb).sha256sum
+          echo gls_*.deb.sha256sum
+      
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: |
+            *.deb*
