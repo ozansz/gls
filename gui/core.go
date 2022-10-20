@@ -2,11 +2,14 @@ package gui
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
+	"github.com/ozansz/gls/internal/cp"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/ozansz/gls/internal"
@@ -65,6 +68,9 @@ func GetApp(path string, f types.SizeFormatter) *tview.Application {
 			}
 			if event.Rune() == 'v' || event.Rune() == 'V' {
 				openVIM(app)
+			}
+			if event.Rune() == 'd' || event.Rune() == 'D' {
+				duplicateFileAndFolder(app)
 			}
 			// Commands below here are about the current hovered file.
 			if currTreeView == nil {
@@ -534,4 +540,110 @@ func openVIM(app *tview.Application) {
 			log.Error(err)
 		}
 	})
+}
+
+func duplicateFileAndFolder(app *tview.Application) {
+	cNode := currTreeView.GetCurrentNode()
+	if cNode == nil {
+		return
+	}
+	srcFileName := cNode.GetReference().(*types.Node).Name
+	srcPath := cNode.GetReference().(*types.Node).RelativePath(currPath)
+
+	form := tview.NewForm().
+		AddInputField("Destination srcPath", "", 30, nil, nil)
+
+	form.AddButton("Copy", func() {
+		dstPath := form.GetFormItem(0).(*tview.InputField).GetText()
+		//dstPath = strings.TrimRight(dstPath, "/")
+
+		dstPathInfo, err := os.Stat(dstPath)
+		if os.IsNotExist(err) {
+			// Create destination directory if it is not exist.
+			err = os.Mkdir(dstPath, 0666)
+			if err != nil {
+				log.Errorf("Directory couldn't created: %v", err)
+				showMessage(app, "Directory couldn't created", nil)
+				return
+			}
+		}
+		dstPathInfo, err = os.Stat(dstPath)
+		if !dstPathInfo.IsDir() {
+			log.Error("Given destination path is not a directory.")
+			showMessage(app, "Given destination path is not a directory", nil)
+			return
+		}
+		if cNode.GetReference().(*types.Node).IsDir {
+			// Duplicate folder
+			srcFolderName := srcFileName
+			if ok, err := fileExistInDstPath(dstPath, srcFolderName); ok && err == nil {
+				log.Error("Already exist folder name")
+				showMessage(app, "Already exist folder name", nil)
+				return
+			} else if err != nil {
+				log.Errorf("Destination directory couldn't read: %v", err)
+				showMessage(app, "Destination directory couldn't read.", nil)
+				return
+			}
+			err := cp.Folder(srcPath, dstPath)
+			if err != nil {
+				log.Errorf("Folder couldn't copied to destination path: %v", err)
+				showMessage(app, "Folder couldn't copied to destination path", nil)
+				return
+			}
+			log.Infof("Folder is copied to %s successfully.", dstPath)
+			newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*types.Node))
+			newRoot.SetExpanded(true)
+			currTreeView.SetRoot(newRoot).SetCurrentNode(newRoot)
+			app.SetRoot(currGrid, true).SetFocus(currGrid)
+		} else {
+			// Duplicate file
+
+			if ok, err := fileExistInDstPath(dstPath, srcFileName); ok && err == nil {
+				log.Error("Already exist file name")
+				showMessage(app, "Already exist file name", nil)
+				return
+			} else if err != nil {
+				log.Errorf("Destination directory couldn't read: %v", err)
+				showMessage(app, "Destination directory couldn't read.", nil)
+				return
+			}
+
+			err = cp.File(filepath.Join(dstPath, srcFileName), srcPath)
+			//err = duplicateFile(filepath.Join(dstPath, srcFileName), srcPath)
+			if err != nil {
+				log.Errorf("File couldn't copied to destination: %v", err)
+				showMessage(app, fmt.Sprintf("File couldn't copied to destination: %v", err.Error()), nil)
+				return
+			}
+			log.Info("File is copied successfully.")
+			newRoot := constructNativeTree(currTreeView.GetRoot().GetReference().(*types.Node))
+			newRoot.SetExpanded(true)
+			currTreeView.SetRoot(newRoot).SetCurrentNode(newRoot)
+			app.SetRoot(currGrid, true).SetFocus(currGrid)
+		}
+	})
+
+	form.AddButton("Cancel", func() {
+		isFormInputActive = false
+		app.SetRoot(currGrid, true).SetFocus(currGrid)
+	})
+
+	isFormInputActive = true
+	app.SetRoot(form, true).SetFocus(form)
+}
+
+func fileExistInDstPath(path, fileName string) (bool, error) {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return false, err
+	}
+
+	for _, file := range files {
+		if file.Name() == fileName {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

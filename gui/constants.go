@@ -96,6 +96,10 @@ var (
 			Key:     "v",
 			Command: "open file in VIM",
 		},
+		{
+			Key:     "d",
+			Command: "cp/paste marked files and folders",
+		},
 	}
 )
 
