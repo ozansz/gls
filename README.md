@@ -20,7 +20,10 @@ It’s `ls` + `du` + `tree` with interactive TUI on your terminal! `gls` is crea
 * [How to Contribute](#how-to-contribute)
 
 ##  Installation
-Installing `gls` on your machine is pretty simple: just clone the repo and install `cmd/gls.go`:
+
+### From Source Code
+
+Installing `gls` on your machine with the source code is pretty simple: just clone the repo and install `cmd/gls.go`:
 
 ```bash
 $ git clone https://github.com/ozansz/gls
@@ -33,6 +36,12 @@ After you run `go install` command, an executable file name `gls` is created in 
 ```bash
 $ gls
 ```
+
+### For Ubuntu/Debian and derivatives
+
+If you use a Debian-based distro on Linux, you can download the package which seems like `gls_<VERSION_NUMBER>_amd64.deb` from [Releases](https://github.com/ozansz/gls/releases) page. Then, you can install it
+* via a package management software with GUI by clicking on the package if you use desktop environment
+* or from the terminal, type `sudo dpkg -i gls_<VERSION_NUMBER>_amd64.deb` in the directory where you downloaded the package. 
 
 ## Usage
 There are two running modes of `gls`: TUI and text-based.
