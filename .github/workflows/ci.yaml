@@ -37,7 +37,7 @@ jobs:
           go version
       # Run build of the application
       - name: Run build
-        run: go build .
+        run: go build cmd/gls.go
 
       # Run vet & lint on the code
       - name: Run vet & fmt
