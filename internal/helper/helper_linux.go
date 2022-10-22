@@ -4,6 +4,7 @@ import (
 	"github.com/ozansz/gls/internal"
 	"io/fs"
 	"syscall"
+	"fmt"
 )
 
 func (fsInfo FsInfo) GetSize(fInfo fs.FileInfo) (int64, error) {
