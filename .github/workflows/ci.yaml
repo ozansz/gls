@@ -42,5 +42,4 @@ jobs:
       # Run vet & lint on the code
       - name: Run vet & fmt
         run: |
-          go vet .
-          gofmt -l .
+          go vet cmd/gls.go
