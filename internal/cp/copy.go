@@ -35,7 +35,8 @@ func File(dst, src string) error {
 	if n != srcStat.Size() {
 		return fmt.Errorf("src file couldn't copied to destination. %v byte(s) is missing", math.Abs(float64(n-srcStat.Size())))
 	}
-	return os.Chmod(dst, srcStat.Mode())
+
+	return dstFile.Chmod(srcStat.Mode())
 }
 
 // Folder copies the given src folder to dst location recursively.
