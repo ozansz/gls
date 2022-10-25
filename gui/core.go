@@ -585,7 +585,7 @@ func duplicateFileAndFolder(app *tview.Application) {
 				showMessage(app, "Destination directory couldn't read.", nil)
 				return
 			}
-			err := cp.Folder(srcPath, dstPath)
+			err := cp.Folder(filepath.Join(dstPath, srcFolderName), srcPath)
 			if err != nil {
 				log.Errorf("Folder couldn't copied to destination path: %v", err)
 				showMessage(app, "Folder couldn't copied to destination path", nil)

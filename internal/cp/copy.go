@@ -57,12 +57,12 @@ func Folder(dst, src string) error {
 
 	for _, f := range files {
 		if f.IsDir() {
-			err = Folder(dst, filepath.Join(src, f.Name()))
+			err = Folder(filepath.Join(dst, f.Name()), filepath.Join(src, f.Name()))
 			if err != nil {
 				return err
 			}
 		} else {
-			err = File(dst, filepath.Join(src, f.Name()))
+			err = File(filepath.Join(dst, f.Name()), filepath.Join(src, f.Name()))
 			if err != nil {
 				return err
 			}
