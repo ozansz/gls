@@ -542,6 +542,8 @@ func openVIM(app *tview.Application) {
 	})
 }
 
+// duplicateFileAndFolder copies and pastes the marked files and folders to
+// given destination path.
 func duplicateFileAndFolder(app *tview.Application) {
 	cNode := currTreeView.GetCurrentNode()
 	if cNode == nil {
@@ -555,12 +557,17 @@ func duplicateFileAndFolder(app *tview.Application) {
 
 	form.AddButton("Copy", func() {
 		dstPath := form.GetFormItem(0).(*tview.InputField).GetText()
-		//dstPath = strings.TrimRight(dstPath, "/")
 
 		dstPathInfo, err := os.Stat(dstPath)
 		if os.IsNotExist(err) {
 			// Create destination directory if it is not exist.
-			err = os.Mkdir(dstPath, 0666)
+			perm, err := dirPerm(srcPath)
+			if err != nil {
+				log.Errorf("Source path's file permission couldn't get: %v", err)
+				showMessage(app, "Source path's file permission couldn't get", nil)
+				return
+			}
+			err = os.Mkdir(dstPath, perm)
 			if err != nil {
 				log.Errorf("Directory couldn't created: %v", err)
 				showMessage(app, "Directory couldn't created", nil)
@@ -575,6 +582,7 @@ func duplicateFileAndFolder(app *tview.Application) {
 		}
 		if cNode.GetReference().(*types.Node).IsDir {
 			// Duplicate folder
+
 			srcFolderName := srcFileName
 			if ok, err := fileExistInDstPath(dstPath, srcFolderName); ok && err == nil {
 				log.Error("Already exist folder name")
@@ -610,7 +618,6 @@ func duplicateFileAndFolder(app *tview.Application) {
 			}
 
 			err = cp.File(filepath.Join(dstPath, srcFileName), srcPath)
-			//err = duplicateFile(filepath.Join(dstPath, srcFileName), srcPath)
 			if err != nil {
 				log.Errorf("File couldn't copied to destination: %v", err)
 				showMessage(app, fmt.Sprintf("File couldn't copied to destination: %v", err.Error()), nil)
@@ -633,6 +640,7 @@ func duplicateFileAndFolder(app *tview.Application) {
 	app.SetRoot(form, true).SetFocus(form)
 }
 
+// fileExistInDstPath checks the file path whether it exists in destination path.
 func fileExistInDstPath(path, fileName string) (bool, error) {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -646,4 +654,13 @@ func fileExistInDstPath(path, fileName string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// dirPerm is a helper function for getting directory's permission.
+func dirPerm(path string) (os.FileMode, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return 0, err
+	}
+	return fileInfo.Mode(), nil
 }
