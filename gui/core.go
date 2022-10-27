@@ -564,13 +564,7 @@ func duplicateFileAndFolder(app *tview.Application) {
 		dstPathInfo, err := os.Stat(dstPath)
 		if os.IsNotExist(err) {
 			// Create destination directory if it is not exist.
-			perm, err := dirPerm(srcPath)
-			if err != nil {
-				log.Errorf("Source path's file permission couldn't get: %v", err)
-				showMessage(app, "Source path's file permission couldn't get", nil)
-				return
-			}
-			err = os.Mkdir(dstPath, perm)
+			err = os.MkdirAll(dstPath, os.ModePerm)
 			if err != nil {
 				log.Errorf("Directory couldn't created: %v", err)
 				showMessage(app, "Directory couldn't created", nil)
@@ -657,13 +651,4 @@ func fileExistInDstPath(path, fileName string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-// dirPerm is a helper function for getting directory's permission.
-func dirPerm(path string) (os.FileMode, error) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return 0, err
-	}
-	return fileInfo.Mode(), nil
 }
