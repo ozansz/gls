@@ -556,6 +556,9 @@ func duplicateFileAndFolder(app *tview.Application) {
 		AddInputField("Destination srcPath", "", 30, nil, nil)
 
 	form.AddButton("Copy", func() {
+		defer func() {
+			isFormInputActive = false
+		}()
 		dstPath := form.GetFormItem(0).(*tview.InputField).GetText()
 
 		dstPathInfo, err := os.Stat(dstPath)
