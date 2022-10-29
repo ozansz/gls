@@ -11,7 +11,7 @@ import (
 
 	"github.com/ozansz/gls/internal"
 	"github.com/ozansz/gls/internal/analyzer"
-	"github.com/ozansz/gls/internal/helper"
+	"github.com/ozansz/gls/internal/size"
 )
 
 type Node struct {
@@ -263,7 +263,7 @@ func (n *Node) CreateChild(fileName, parentPath string) error {
 	if err != nil {
 		return fmt.Errorf("could not stat file %s: %v", filePath, err)
 	}
-	var diskUsage helper.DiskUsage = &helper.FsInfo{}
+	var diskUsage size.DiskUsage = &size.FsInfo{}
 	size, err := diskUsage.GetSize(fInfo)
 	if err != nil {
 		return err

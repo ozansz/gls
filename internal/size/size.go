@@ -1,4 +1,4 @@
-package helper
+package size
 
 import (
 	"io/fs"

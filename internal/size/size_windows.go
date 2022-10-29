@@ -1,4 +1,4 @@
-package helper
+package size
 
 import (
 	"github.com/ozansz/gls/internal"

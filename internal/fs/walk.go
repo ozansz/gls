@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ozansz/gls/internal/helper"
+	"github.com/ozansz/gls/internal/size"
 	"github.com/ozansz/gls/internal/local"
 	"github.com/ozansz/gls/internal/types"
 	"github.com/ozansz/gls/log"
@@ -26,7 +26,7 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 		return nil, nil
 	}
 	//implements os dependent proper methods.
-	var diskUsage helper.DiskUsage = &helper.FsInfo{}
+	var diskUsage size.DiskUsage = &size.FsInfo{}
 	size, err := diskUsage.GetSize(f)
 	if err != nil {
 		return nil, err
