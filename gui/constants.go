@@ -2,6 +2,10 @@ package gui
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"log"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type Shortcut struct {
@@ -9,7 +13,9 @@ type Shortcut struct {
 	Command string
 }
 
-const (
+const configurationFile = ".glsrc"
+
+var (
 	GridTitleColor       = tcell.ColorRed
 	TreeViewTitleColor   = tcell.ColorGreen
 	FileInfoTitleColor   = tcell.ColorOrange
@@ -88,3 +94,69 @@ var (
 		},
 	}
 )
+
+func init() {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("HOME directory couldn't get")
+	}
+	path := dirname + "/" + configurationFile
+	err = readGLSRCFile(path)
+	if err != nil {
+		return
+	}
+}
+
+// readGLSRCFile reads .glsrc file and updates the variables.
+func readGLSRCFile(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	customVars := strings.Split(string(data), "\n")
+	for _, v := range customVars {
+		if len(strings.TrimSpace(v)) == 0 {
+			continue
+		}
+		vv := strings.Split(v, "=")
+		key, val := strings.TrimSpace(vv[0]), strings.TrimSpace(vv[1])
+		if strings.EqualFold(key, "GridTitleColor") {
+			GridTitleColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "TreeViewTitleColor") {
+			TreeViewTitleColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "FileInfoTitleColor") {
+			FileInfoTitleColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "DirectoryColor") {
+			DirectoryColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "BorderColor") {
+			BorderColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "FileInfoAttrColor") {
+			FileInfoAttrColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "FileInfoValueColor") {
+			FileInfoValueColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "SearchFormTitleColor") {
+			SearchFormTitleColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "UnmarkedFileColor") {
+			UnmarkedFileColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "MarkedFileColor") {
+			MarkedFileColor = tcell.GetColor(val)
+		}
+		if strings.EqualFold(key, "FileInfoTabAttrWidth") {
+			fileInfoTabAttrWidth, err := strconv.Atoi(val)
+			if err != nil {
+				continue
+			}
+			FileInfoTabAttrWidth = fileInfoTabAttrWidth
+		}
+	}
+	return nil
+}
