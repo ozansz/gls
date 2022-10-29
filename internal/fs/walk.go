@@ -2,14 +2,12 @@ package fs
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 
-	"github.com/ozansz/gls/internal"
+	"github.com/ozansz/gls/internal/size"
 	"github.com/ozansz/gls/internal/local"
 	"github.com/ozansz/gls/internal/types"
 	"github.com/ozansz/gls/log"
@@ -27,15 +25,21 @@ func Walk(path string, opts *WalkOptions) (*types.Node, error) {
 		log.Warningf("%s: %v", path, err)
 		return nil, nil
 	}
-	st, ok := f.Sys().(*syscall.Stat_t)
-	if !ok {
-		return nil, fmt.Errorf("could not cast %T to syscall.Stat_t", f.Sys())
+	//implements os dependent proper methods.
+	var diskUsage size.DiskUsage = &size.FsInfo{}
+	size, err := diskUsage.GetSize(f)
+	if err != nil {
+		return nil, err
+	}
+	sizeOnDisk, err := diskUsage.GetSizeOnDisk(f)
+	if err != nil {
+		return nil, err
 	}
 	root := &types.Node{
 		Name:             f.Name(),
 		Mode:             f.Mode(),
-		Size:             st.Size,
-		SizeOnDisk:       st.Blocks * internal.SizeOfBlock,
+		Size:             size,
+		SizeOnDisk:       sizeOnDisk,
 		IsDir:            f.IsDir(),
 		LastModification: f.ModTime(),
 	}

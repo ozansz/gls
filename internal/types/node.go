@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/ozansz/gls/internal"
 	"github.com/ozansz/gls/internal/analyzer"
+	"github.com/ozansz/gls/internal/size"
 )
 
 type Node struct {
@@ -263,15 +263,16 @@ func (n *Node) CreateChild(fileName, parentPath string) error {
 	if err != nil {
 		return fmt.Errorf("could not stat file %s: %v", filePath, err)
 	}
-	st, ok := fInfo.Sys().(*syscall.Stat_t)
-	if !ok {
-		return fmt.Errorf("could not get stat_t for file %s", filePath)
+	var diskUsage size.DiskUsage = &size.FsInfo{}
+	size, err := diskUsage.GetSize(fInfo)
+	if err != nil {
+		return err
 	}
 	n.Children = append(n.Children, &Node{
 		Name:             fInfo.Name(),
 		Mode:             fInfo.Mode(),
-		Size:             st.Size,
-		SizeOnDisk:       st.Size * internal.SizeOfBlock,
+		Size:             size,
+		SizeOnDisk:       size * internal.UNIXSizeOfBlock,
 		IsDir:            fInfo.IsDir(),
 		LastModification: fInfo.ModTime(),
 		Parent:           n,

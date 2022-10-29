@@ -12,5 +12,6 @@ const (
 )
 
 const (
-	SizeOfBlock = 512
+	UNIXSizeOfBlock = 512
+	NSClusterSize   = 4096
 )
