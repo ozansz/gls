@@ -5,7 +5,7 @@ import "fmt"
 const (
 	Project      = "gls"
 	VersionMajor = 1
-	VersionMinor = 3
+	VersionMinor = 4
 	VersionPatch = 0
 )
 
