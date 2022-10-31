@@ -44,6 +44,17 @@ If you use a Debian-based distro on Linux, you can download the package which se
 * via a package management software with GUI by clicking on the package if you use desktop environment
 * or from the terminal, type `sudo dpkg -i gls_<VERSION_NUMBER>_amd64.deb` in the directory where you downloaded the package. 
 
+### For Windows
+
+You can apply the similar procedure in PowerShell shown in the [From Source Code](#from-source-code) section:
+
+```powershell
+> git clone https://github.com/ozansz/gls
+> cd .\gls\
+> go install -v .\cmd\gls.go
+```
+Now, you can use `gls` in all directories.
+
 ## Usage
 There are two running modes of `gls`: TUI and text-based.
 
