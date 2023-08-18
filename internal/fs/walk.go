@@ -7,10 +7,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ozansz/gls/internal/size"
-	"github.com/ozansz/gls/internal/local"
-	"github.com/ozansz/gls/internal/types"
-	"github.com/ozansz/gls/log"
+	"go.sazak.io/gls/internal/local"
+	"go.sazak.io/gls/internal/size"
+	"go.sazak.io/gls/internal/types"
+	"go.sazak.io/gls/log"
+
 	"golang.org/x/sync/errgroup"
 )
 

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ozansz/gls/internal"
-	"github.com/ozansz/gls/internal/analyzer"
-	"github.com/ozansz/gls/internal/size"
+	"go.sazak.io/gls/internal"
+	"go.sazak.io/gls/internal/analyzer"
+	"go.sazak.io/gls/internal/size"
 )
 
 type Node struct {

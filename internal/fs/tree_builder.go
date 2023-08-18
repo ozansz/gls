@@ -3,8 +3,8 @@ package fs
 import (
 	"fmt"
 
-	"github.com/ozansz/gls/internal/local"
-	"github.com/ozansz/gls/internal/types"
+	"go.sazak.io/gls/internal/local"
+	"go.sazak.io/gls/internal/types"
 )
 
 type FileTreeBuilderOption func(*FileTreeBuilder)

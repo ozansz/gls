@@ -1,11 +1,12 @@
 package cp
 
 import (
-	"github.com/ozansz/gls/log"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.sazak.io/gls/log"
 )
 
 func TestMain(m *testing.M) {

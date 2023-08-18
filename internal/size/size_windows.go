@@ -1,8 +1,9 @@
 package size
 
 import (
-	"github.com/ozansz/gls/internal"
 	"io/fs"
+
+	"go.sazak.io/gls/internal"
 )
 
 func (fsInfo FsInfo) GetSize(fInfo fs.FileInfo) (int64, error) {

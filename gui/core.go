@@ -2,20 +2,21 @@ package gui
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/ozansz/gls/internal/cp"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
+	"go.sazak.io/gls/internal/cp"
+
 	"github.com/rivo/tview"
 
-	"github.com/ozansz/gls/internal"
-	"github.com/ozansz/gls/internal/info"
-	"github.com/ozansz/gls/internal/types"
-	"github.com/ozansz/gls/log"
+	"go.sazak.io/gls/internal"
+	"go.sazak.io/gls/internal/info"
+	"go.sazak.io/gls/internal/types"
+	"go.sazak.io/gls/log"
 )
 
 var (
