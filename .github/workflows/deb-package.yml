@@ -18,7 +18,7 @@ jobs:
           go-version: 1.19
       
       - name: Build binaries
-        run: go build -v ./... && go build -v cmd/gls.go
+        run: go build -v ./... && go build -v cmd/gls/main.go
       
       - name: Prepare directories for .deb packaging
         run: |

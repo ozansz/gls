@@ -21,7 +21,6 @@
 go.work
 
 ## Custom
-gls
 gls.out
 test/
 *.test

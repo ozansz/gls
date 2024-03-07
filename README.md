@@ -22,14 +22,22 @@ It’s `ls` + `du` + `tree` with interactive TUI on your terminal! `gls` is crea
 
 ##  Installation
 
+### From Go package
+
+Simply run:
+
+```bash
+go install go.sazak.io/gls/cmd/gls@latest
+```
+
 ### From Source Code
 
-Installing `gls` on your machine with the source code is pretty simple: just clone the repo and install `cmd/gls.go`:
+Installing `gls` on your machine with the source code is pretty simple: just clone the repo and install `cmd/gls/main.go`:
 
 ```bash
 $ git clone https://github.com/ozansz/gls
 $ cd gls
-$ go install ./cmd/gls.go
+$ go install ./cmd/gls/main.go
 ```
 
 After you run `go install` command, an executable file name `gls` is created in `$GOPATH/bin`. Now, you can simply run `gls` in terminal:
@@ -51,7 +59,7 @@ You can apply the similar procedure in PowerShell shown in the [From Source Code
 ```powershell
 > git clone https://github.com/ozansz/gls
 > cd .\gls\
-> go install -v .\cmd\gls.go
+> go install -v .\cmd\gls\main.go
 ```
 Now, you can use `gls` in all directories.
 
@@ -120,7 +128,7 @@ You can freely change the key bindings and shortcuts or configure the program fo
 After your changes, run
 
 ```bash
-go build cmd/gls.go
+go build cmd/gls/main.go
 ```
 in the project directory.
 

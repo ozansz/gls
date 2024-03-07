@@ -21,7 +21,7 @@ git clone git@github.com:<your-username>/gls.git
 
 ```bash
 cd gls
-go build cmd/gls.go
+go build cmd/gls/main.go
 ```
 
 ## Contribution Flow
